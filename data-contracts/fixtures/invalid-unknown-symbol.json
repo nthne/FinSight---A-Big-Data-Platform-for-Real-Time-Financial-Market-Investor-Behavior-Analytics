@@ -1,0 +1,13 @@
+{
+  "event_id": "1d2b242e-87e2-53fb-944e-fd94baa86ce7",
+  "event_type": "market_quote",
+  "schema_version": "1.0.0",
+  "source": "fixture",
+  "event_time": "2026-10-15T09:31:00Z",
+  "ingestion_time": "2026-10-15T09:31:01Z",
+  "asset_symbol": "UNKNOWN_ASSET",
+  "payload": {
+    "close_price": 1,
+    "currency": "VND"
+  }
+}

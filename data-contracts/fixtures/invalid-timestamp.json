@@ -1,0 +1,13 @@
+{
+  "event_id": "2111b428-f232-5322-99a2-7821d283a385",
+  "event_type": "market_quote",
+  "schema_version": "1.0.0",
+  "source": "yahoo",
+  "event_time": "15/10/2026 09:30",
+  "ingestion_time": "2026-10-15T09:30:02Z",
+  "asset_symbol": "AAPL",
+  "payload": {
+    "close_price": 6287500,
+    "currency": "VND"
+  }
+}

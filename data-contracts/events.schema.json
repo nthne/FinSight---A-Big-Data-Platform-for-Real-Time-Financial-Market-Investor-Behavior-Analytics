@@ -1,0 +1,165 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://finsight.local/contracts/events/1.0.0",
+  "title": "FinSight analytical event",
+  "description": "Version 1 envelope shared by market, trade, user-action and portfolio-snapshot events.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "event_id",
+    "event_type",
+    "schema_version",
+    "source",
+    "event_time",
+    "ingestion_time",
+    "payload"
+  ],
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Stable UUID. A retry of the same source record must reuse this value."
+    },
+    "event_type": {
+      "type": "string",
+      "enum": ["market_quote", "trade_executed", "user_action", "portfolio_snapshot"]
+    },
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "source": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{1,63}$"
+    },
+    "event_time": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "ingestion_time": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "asset_symbol": {
+      "type": "string",
+      "pattern": "^[A-Z0-9][A-Z0-9._=-]{0,31}$"
+    },
+    "user_id": {
+      "type": "string",
+      "pattern": "^usr_[a-f0-9]{64}$",
+      "description": "Pseudonymous analytical identifier; never a Supabase auth UUID."
+    },
+    "payload": {
+      "type": "object"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "event_type": { "const": "market_quote" } },
+        "required": ["event_type"]
+      },
+      "then": {
+        "required": ["asset_symbol"],
+        "properties": {
+          "payload": { "$ref": "#/$defs/market_quote_payload" }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "event_type": { "const": "trade_executed" } },
+        "required": ["event_type"]
+      },
+      "then": {
+        "required": ["asset_symbol", "user_id"],
+        "properties": {
+          "payload": { "$ref": "#/$defs/trade_payload" }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "event_type": { "const": "user_action" } },
+        "required": ["event_type"]
+      },
+      "then": {
+        "required": ["user_id"],
+        "properties": {
+          "payload": { "$ref": "#/$defs/user_action_payload" }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "event_type": { "const": "portfolio_snapshot" } },
+        "required": ["event_type"]
+      },
+      "then": {
+        "required": ["user_id"],
+        "properties": {
+          "payload": { "$ref": "#/$defs/portfolio_snapshot_payload" }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "money": {
+      "type": "number",
+      "minimum": 0
+    },
+    "market_quote_payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["close_price", "currency"],
+      "properties": {
+        "quote_id": { "type": "string", "format": "uuid" },
+        "open_price": { "$ref": "#/$defs/money" },
+        "high_price": { "$ref": "#/$defs/money" },
+        "low_price": { "$ref": "#/$defs/money" },
+        "close_price": { "type": "number", "exclusiveMinimum": 0 },
+        "volume": { "type": "number", "minimum": 0 },
+        "currency": { "type": "string", "pattern": "^[A-Z]{3}$" },
+        "provider_symbol": { "type": "string", "minLength": 1, "maxLength": 64 }
+      }
+    },
+    "trade_payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["order_id", "side", "quantity", "price", "fee", "total"],
+      "properties": {
+        "order_id": { "type": "string", "format": "uuid" },
+        "side": { "type": "string", "enum": ["buy", "sell"] },
+        "quantity": { "type": "number", "exclusiveMinimum": 0 },
+        "price": { "type": "number", "exclusiveMinimum": 0 },
+        "fee": { "$ref": "#/$defs/money" },
+        "total": { "$ref": "#/$defs/money" },
+        "order_kind": { "type": "string", "enum": ["market", "limit", "stop"] },
+        "status": { "type": "string", "enum": ["pending", "executed", "cancelled", "rejected"] }
+      }
+    },
+    "user_action_payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["action_id", "action_type", "metadata"],
+      "properties": {
+        "action_id": { "type": "string", "format": "uuid" },
+        "action_type": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "metadata": { "type": "object" }
+      }
+    },
+    "portfolio_snapshot_payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["snapshot_id", "total_value", "cash_balance", "invested_value", "pnl"],
+      "properties": {
+        "snapshot_id": { "type": "string", "format": "uuid" },
+        "total_value": { "$ref": "#/$defs/money" },
+        "cash_balance": { "$ref": "#/$defs/money" },
+        "invested_value": { "$ref": "#/$defs/money" },
+        "pnl": { "type": "number" },
+        "risk_score": { "type": ["number", "null"], "minimum": 0 },
+        "diversification_score": { "type": ["number", "null"], "minimum": 0 }
+      }
+    }
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "event_id": "2111b428-f232-5322-99a2-7821d283a385",
+  "event_type": "market_quote",
+  "schema_version": "1.0.0",
+  "source": "yahoo",
+  "event_time": "2026-10-15T09:30:00Z",
+  "ingestion_time": "2026-10-15T09:30:02Z",
+  "asset_symbol": "AAPL",
+  "payload": {
+    "quote_id": "d705d879-8f7c-49a9-8b70-8e18489f3622",
+    "open_price": 6242800,
+    "high_price": 6300000,
+    "low_price": 6215000,
+    "close_price": 6287500,
+    "volume": 42133700,
+    "currency": "VND",
+    "provider_symbol": "AAPL"
+  }
+}
