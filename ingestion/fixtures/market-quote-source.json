@@ -1,0 +1,13 @@
+{
+  "price_id": "d705d879-8f7c-49a9-8b70-8e18489f3622",
+  "symbol": "AAPL",
+  "source": "yahoo",
+  "timestamp": "2026-10-15T09:30:00Z",
+  "open_price": 6242800,
+  "high_price": 6300000,
+  "low_price": 6215000,
+  "close_price": 6287500,
+  "volume": 42133700,
+  "currency": "VND",
+  "provider_symbol": "AAPL"
+}
