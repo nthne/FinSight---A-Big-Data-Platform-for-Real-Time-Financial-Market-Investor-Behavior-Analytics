@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.107.0";
+import { publishMarketQuoteEvents } from "./analytics.ts";
 
 type ProviderPrice = {
   symbol: string;
@@ -139,8 +140,16 @@ Deno.serve(async (request) => {
       if (upsertError) throw new Error(upsertError.message);
     }
 
+    const analytics = await publishMarketQuoteEvents({
+      prices,
+      assets: bySymbol,
+      ingestionTime: timestamp,
+      gatewayUrl: Deno.env.get("INGESTION_GATEWAY_URL"),
+      gatewayToken: Deno.env.get("INGESTION_GATEWAY_TOKEN"),
+    });
+
     return Response.json(
-      { ok: true, mode, count: rows.length, timestamp },
+      { ok: true, mode, count: rows.length, analytics, timestamp },
       { headers: corsHeaders },
     );
   } catch (error) {
