@@ -1,6 +1,11 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Json } from "@/integrations/supabase/types";
+import {
+  buildPortfolioSnapshotEvent,
+  buildUserActionEvent,
+} from "../../ingestion/producers/app_event_producer";
+import { analyticsUserSalt, emitAnalyticsEvent } from "@/lib/analytics-events.server";
 
 // ─── User Action Logs ───────────────────────────────────────────────────────
 
@@ -11,13 +16,35 @@ export const logUserAction = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    await supabase.from("user_action_logs").insert({
-      user_id: userId,
-      action_type: data.actionType,
-      symbol: data.symbol ?? null,
-      metadata: (data.metadata ?? {}) as Json,
-    });
-    return { ok: true };
+    const { data: log, error } = await supabase
+      .from("user_action_logs")
+      .insert({
+        user_id: userId,
+        action_type: data.actionType,
+        symbol: data.symbol ?? null,
+        metadata: (data.metadata ?? {}) as Json,
+      })
+      .select("log_id, action_type, symbol, metadata, created_at")
+      .single();
+    if (error) throw new Error(error.message);
+
+    const salt = analyticsUserSalt();
+    const analyticsPublished = salt
+      ? await emitAnalyticsEvent(
+          buildUserActionEvent(
+            {
+              id: log.log_id,
+              userId,
+              actionType: log.action_type,
+              symbol: log.symbol,
+              metadata: (log.metadata ?? {}) as Record<string, unknown>,
+              createdAt: log.created_at,
+            },
+            salt,
+          ),
+        )
+      : false;
+    return { ok: true, analyticsPublished };
   });
 
 export const getMyActionLogs = createServerFn({ method: "GET" })
@@ -254,18 +281,48 @@ export const savePortfolioSnapshot = createServerFn({ method: "POST" })
 
     if (existing) return { ok: true, skipped: true };
 
-    const { error } = await supabase.from("portfolio_snapshots").insert({
-      user_id: userId,
-      total_value: data.totalValue,
-      cash_balance: data.cashBalance,
-      invested_value: data.investedValue,
-      pnl: data.pnl,
-      risk_score: data.riskScore ?? null,
-      diversification_score: data.diversificationScore ?? null,
-      snapshot_source: "user_visit",
-    });
+    const { data: snapshot, error } = await supabase
+      .from("portfolio_snapshots")
+      .insert({
+        user_id: userId,
+        total_value: data.totalValue,
+        cash_balance: data.cashBalance,
+        invested_value: data.investedValue,
+        pnl: data.pnl,
+        risk_score: data.riskScore ?? null,
+        diversification_score: data.diversificationScore ?? null,
+        snapshot_source: "user_visit",
+      })
+      .select(
+        "snapshot_id, total_value, cash_balance, invested_value, pnl, risk_score, diversification_score, created_at",
+      )
+      .single();
     if (error) throw new Error(error.message);
-    return { ok: true, skipped: false };
+
+    const salt = analyticsUserSalt();
+    const analyticsPublished = salt
+      ? await emitAnalyticsEvent(
+          buildPortfolioSnapshotEvent(
+            {
+              id: snapshot.snapshot_id,
+              userId,
+              totalValue: Number(snapshot.total_value),
+              cashBalance: Number(snapshot.cash_balance),
+              investedValue: Number(snapshot.invested_value),
+              pnl: Number(snapshot.pnl),
+              riskScore:
+                snapshot.risk_score == null ? null : Number(snapshot.risk_score),
+              diversificationScore:
+                snapshot.diversification_score == null
+                  ? null
+                  : Number(snapshot.diversification_score),
+              createdAt: snapshot.created_at,
+            },
+            salt,
+          ),
+        )
+      : false;
+    return { ok: true, skipped: false, analyticsPublished };
   });
 
 // ─── User XP ─────────────────────────────────────────────────────────────────

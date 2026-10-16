@@ -132,7 +132,10 @@
         "quantity": { "type": "number", "exclusiveMinimum": 0 },
         "price": { "type": "number", "exclusiveMinimum": 0 },
         "fee": { "$ref": "#/$defs/money" },
-        "total": { "$ref": "#/$defs/money" },
+        "total": {
+          "type": "number",
+          "description": "Signed cash flow: negative for buys and positive for sells."
+        },
         "order_kind": { "type": "string", "enum": ["market", "limit", "stop"] },
         "status": { "type": "string", "enum": ["pending", "executed", "cancelled", "rejected"] }
       }

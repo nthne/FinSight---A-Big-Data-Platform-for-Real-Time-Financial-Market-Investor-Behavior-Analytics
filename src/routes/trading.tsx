@@ -25,6 +25,7 @@ import { loadMarketPriceHistory } from "@/lib/market-sync";
 import { useTradingStore, type OrderType, type Side } from "@/lib/store";
 import { formatVnd } from "@/lib/currency";
 import { logUserAction } from "@/lib/user-data.functions";
+import { publishTradeEvents } from "@/lib/analytics-events.functions";
 import { useServerFn } from "@tanstack/react-start";
 import {
   ArrowDownRight,
@@ -76,6 +77,7 @@ const TIMEFRAME_OPTIONS: Array<{ value: Timeframe; label: string }> = [
 function Trading() {
   const { user } = useAuth();
   const doLogAction = useServerFn(logUserAction);
+  const doPublishTradeEvents = useServerFn(publishTradeEvents);
   const [query, setQuery] = useState("");
   const [sector, setSector] = useState("Banking");
   const [timeframe, setTimeframe] = useState<Timeframe>("1D");
@@ -216,6 +218,9 @@ function Trading() {
           },
           result.orders ?? [],
         );
+        await doPublishTradeEvents({
+          data: { orderIds: (result.orders ?? []).map((order) => order.id) },
+        });
         // Log action
         const symbols = [...new Set((result.orders ?? []).map((o) => o.symbol))];
         doLogAction({

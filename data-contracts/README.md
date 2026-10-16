@@ -24,6 +24,8 @@ Version `1.0.0` defines the immutable event envelope used between FinSight produ
 
 Fields without a reliable current source are intentionally absent: provider request ID, market quote bid/ask, session/device ID, order decision timestamp and portfolio position breakdown. They must not be synthesized and presented as observed data.
 
+`trade_executed.payload.total` preserves the application's signed cash-flow convention: buys are negative and sells are positive. `price`, `quantity` and `fee` remain non-negative.
+
 ## Compatibility policy
 
 - `schema_version` uses semantic versioning.
