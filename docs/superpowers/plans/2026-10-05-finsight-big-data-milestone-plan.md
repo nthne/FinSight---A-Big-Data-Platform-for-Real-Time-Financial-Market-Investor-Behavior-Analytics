@@ -99,11 +99,11 @@ The team should finish and submit as soon as all Week 5 criteria pass; Week 6 is
 
   Add reproducible Python dependencies and component Dockerfiles. Build at least the Spark and application images, and record image names/digests used by Kubernetes.
 
-- [ ] **Step 3: Inventory existing fields and freeze the contract**
+- [x] **Step 3: Inventory existing fields and freeze the contract**
 
   Map current `market_prices`, `orders`, portfolio snapshots and behavior records to the event contract. Record fields that have no source yet and define compatibility rules for future schema versions.
 
-- [ ] **Step 4: Write and validate schema fixtures**
+- [x] **Step 4: Write and validate schema fixtures**
 
   Include a valid event, a missing-ID event, an invalid timestamp, an unknown-symbol event and a duplicate-ID event.
 
@@ -135,11 +135,11 @@ The team should finish and submit as soon as all Week 5 criteria pass; Week 6 is
 - Consumes: Versioned event contract from Task 1 and provider adapters from the existing application.
 - Produces: Kafka topics `market-quotes`, `trades`, `user-actions`, `portfolio-snapshots`, and `dead-letter-events`; producer records retain stable `event_id` and source metadata.
 
-- [ ] **Step 1: Declare topic configuration**
+- [x] **Step 1: Declare topic configuration**
 
   Set partition key rules: asset symbol for market quotes and pseudonymous user ID for user events. Record retention and replication assumptions.
 
-- [ ] **Step 2: Implement provider normalization**
+- [x] **Step 2: Implement provider normalization**
 
   Normalize source timestamps, symbols, prices, volumes and currencies before publishing. Invalid records go to the dead-letter topic with an error code.
 
@@ -147,7 +147,7 @@ The team should finish and submit as soon as all Week 5 criteria pass; Week 6 is
 
   Publish trade and behavior events without exposing service-role credentials in the browser. Use a server-side or API producer boundary.
 
-- [ ] **Step 4: Test producer behavior**
+- [x] **Step 4: Test producer behavior**
 
   Run: `pytest ingestion/tests/test_producers.py -v`
 
