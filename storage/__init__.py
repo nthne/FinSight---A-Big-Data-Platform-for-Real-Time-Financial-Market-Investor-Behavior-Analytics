@@ -1,0 +1,1 @@
+"""FinSight analytical storage package."""

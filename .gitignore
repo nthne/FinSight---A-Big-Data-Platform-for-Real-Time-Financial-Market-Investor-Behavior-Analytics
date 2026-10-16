@@ -19,6 +19,7 @@ dist-ssr
 # Python
 __pycache__/
 .pytest_cache/
+.codex_tmp/
 *.py[cod]
 
 # Environment variables and secrets
