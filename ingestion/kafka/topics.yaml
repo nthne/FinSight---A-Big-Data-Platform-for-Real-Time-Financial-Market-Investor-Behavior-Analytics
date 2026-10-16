@@ -1,0 +1,35 @@
+version: 1
+environment_assumptions:
+  local_replication_factor: 1
+  production_replication_factor: 3
+  local_min_in_sync_replicas: 1
+  production_min_in_sync_replicas: 2
+defaults:
+  partitions: 3
+  replication_factor: 1
+  config:
+    cleanup.policy: delete
+    compression.type: producer
+    message.timestamp.type: CreateTime
+    min.insync.replicas: 1
+topics:
+  - name: market-quotes
+    key: asset_symbol
+    retention_ms: 604800000
+    description: Normalized market quote events ordered per canonical asset symbol.
+  - name: trades
+    key: user_id
+    retention_ms: 2592000000
+    description: Executed simulation trade events ordered per pseudonymous user.
+  - name: user-actions
+    key: user_id
+    retention_ms: 1209600000
+    description: Behavioral input events ordered per pseudonymous user.
+  - name: portfolio-snapshots
+    key: user_id
+    retention_ms: 2592000000
+    description: Portfolio snapshot events ordered per pseudonymous user.
+  - name: dead-letter-events
+    key: source
+    retention_ms: 2592000000
+    description: Invalid or unsupported source records with a stable error code.
