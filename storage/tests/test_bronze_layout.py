@@ -61,9 +61,17 @@ def test_bronze_counts_duplicates_and_invalid_records(tmp_path: Path, contract) 
     assert counters.duplicate == 1
     assert counters.rejected == 2
     assert counters.null_required == 1
+    assert counters.by_source["yahoo"] == {
+        "received": 3,
+        "accepted": 1,
+        "duplicate": 1,
+        "rejected": 2,
+        "null_required": 1,
+    }
 
     quality = json.loads((tmp_path / "bronze" / "_runs" / "quality-run.json").read_text())
     assert quality["counters"]["accepted"] == 1
+    assert quality["counters"]["by_source"]["yahoo"]["rejected"] == 2
 
 
 def test_bronze_run_is_immutable(tmp_path: Path, contract) -> None:

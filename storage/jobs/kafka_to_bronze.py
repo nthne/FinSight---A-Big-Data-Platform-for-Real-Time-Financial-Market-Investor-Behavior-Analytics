@@ -49,9 +49,20 @@ def consume_bounded(max_records: int, timeout_seconds: float):
                     topic=message.topic(), partition=message.partition(), offset=message.offset()
                 )
             )
+    except BaseException:
+        consumer.close()
+        raise
+    return events, metadata, consumer
+
+
+def write_and_commit(events, metadata, consumer, writer: BronzeWriter, *, run_id: str):
+    try:
+        counters = writer.write_run(events, run_id=run_id, kafka_metadata=metadata)
+        if events:
+            consumer.commit(asynchronous=False)
+        return counters
     finally:
         consumer.close()
-    return events, metadata
 
 
 def main() -> int:
@@ -69,9 +80,13 @@ def main() -> int:
         if item.strip()
     }
     contract = EventContract.from_file(schema_path, known_symbols=known)
-    events, metadata = consume_bounded(args.max_records, args.poll_timeout)
-    counters = BronzeWriter(args.base_uri, contract).write_run(
-        events, run_id=args.run_id, kafka_metadata=metadata
+    events, metadata, consumer = consume_bounded(args.max_records, args.poll_timeout)
+    counters = write_and_commit(
+        events,
+        metadata,
+        consumer,
+        BronzeWriter(args.base_uri, contract),
+        run_id=args.run_id,
     )
     print(json.dumps(counters.__dict__, sort_keys=True))
     return 0

@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import os
 import re
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -27,6 +27,11 @@ class QualityCounters:
     duplicate: int = 0
     null_required: int = 0
     unknown_symbol: int = 0
+    by_source: dict[str, dict[str, int]] = field(default_factory=dict)
+
+    def record(self, source: str, metric: str) -> None:
+        source_counters = self.by_source.setdefault(source, {})
+        source_counters[metric] = source_counters.get(metric, 0) + 1
 
 
 @dataclass(frozen=True)
@@ -90,10 +95,14 @@ class BronzeWriter:
         accepted_at = datetime.now(UTC)
 
         for index, event in enumerate(events):
+            source = str(event.get("source", "unknown"))
+            counters.record(source, "received")
             event_id = event.get("event_id")
             if event_id in seen:
                 counters.duplicate += 1
                 counters.rejected += 1
+                counters.record(source, "duplicate")
+                counters.record(source, "rejected")
                 continue
             if event_id is not None:
                 seen.add(str(event_id))
@@ -101,10 +110,13 @@ class BronzeWriter:
                 self._contract.validate(event)
             except EventValidationError as error:
                 counters.rejected += 1
+                counters.record(source, "rejected")
                 if error.code == "UNKNOWN_SYMBOL":
                     counters.unknown_symbol += 1
+                    counters.record(source, "unknown_symbol")
                 if "required property" in str(error):
                     counters.null_required += 1
+                    counters.record(source, "null_required")
                 continue
 
             metadata = (
@@ -134,6 +146,7 @@ class BronzeWriter:
                 }
             )
             counters.accepted += 1
+            counters.record(source, "accepted")
 
         if rows:
             table = pa.Table.from_pylist(rows, schema=BRONZE_SCHEMA)
