@@ -2,7 +2,7 @@
 
 **Owner:** Person C (streaming and serving)
 **Readers:** Person D (dashboard), Person B (batch writes into the same views), Person A (event producers)
-**Status:** aligned with event contract `1.0.0` (`data-contracts/events.schema.json`, frozen by Person A on 2026-10-16). The MongoDB side is implemented and tested; the HTTP routes (`src/routes/api/analytics*`) are not implemented yet (Task 9).
+**Status:** aligned with event contract `1.0.0` (`data-contracts/events.schema.json`, frozen by Person A on 2026-10-16). The MongoDB side and the HTTP routes are implemented; `tests/integration/test_analytics_api.py` runs them through `vite dev` against MongoDB.
 
 ## 1. Data flow
 
@@ -25,7 +25,7 @@ Created by `python -m serving.mongo_setup` (or `mongosh serving/mongo_schema.js`
 | `portfolio_risk_views` | B | defined by B | Drawdown, concentration, risk per user |
 | `investor_behavior_segments` | B | defined by B | KMeans segment per user |
 | `pipeline_quality_metrics` | C, A, B | `<kind>\|<query>\|<run_id>\|<batch_id>` | Stream progress, gate counters, sink counters |
-| `lambda_state` | B publishes, C reads | `<dataset>` e.g. `market:1m` | Batch cutoff per dataset |
+| `lambda_state` | B publishes, C reads | `<dataset>`: `market:<granularity>` for `asset_time_series_summary`, `user_activity:<granularity>` for `user_activity_windows` | Batch cutoff per dataset |
 | `stream_state` | C | `lateness\|<query>\|<run_id>\|<group>` | Internal: late-event high-water marks |
 
 Key rules (implemented in `serving/keys.py`, checked by `serving/tests/test_keys.py`):
@@ -57,9 +57,11 @@ Implemented in `serving/lambda_reconciliation.py`, tested in `serving/tests/test
 
 Why batch wins: the speed layer drops events that arrive later than the watermark (see `docs/evidence/streaming-semantics.md`); the batch layer reads them from bronze, so its windows are complete.
 
-## 4. HTTP API (Task 9, to implement)
+## 4. HTTP API (Task 9)
 
-All routes are TanStack Start server routes under `/api/analytics`. Responses are JSON and timestamps are ISO-8601 UTC.
+One TanStack Start server route, `src/routes/api/analytics.$.ts`, dispatches every `GET /api/analytics/*` request to `handleAnalyticsRequest` in `src/lib/analytics.server.ts` (framework-independent). Authentication lives in `src/lib/analytics-auth.server.ts`, the MongoDB client in `src/lib/mongo.server.ts`, and `src/lib/analytics.ts` is the typed browser client for the dashboard. Responses are JSON, timestamps are ISO-8601 UTC, and every response carries `cache-control: private, no-store`.
+
+Server-only configuration: `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` (token verification), `ANALYTICS_USER_SALT` (user pseudonym, `/me` routes), `MONGO_URI` (Secret; a user with the `read` role is enough) and `MONGO_DATABASE` (default `finsight`).
 
 ### 4.1 Authentication and authorization
 
@@ -68,7 +70,7 @@ All routes are TanStack Start server routes under `/api/analytics`. Responses ar
   `user_id = "usr_" + sha256(ANALYTICS_USER_SALT + ":" + sub).hex()`
   — the same function the producers use (`pseudonymizeUserId` in `ingestion/producers/app_event_producer.ts`, `serving.keys.pseudonymize_user_id` in Python) — and always filters by it, so a user can only read their own analytics.
 - `ANALYTICS_USER_SALT` is the server-only secret already shared with the ingestion gateway (`.env.example`, Kubernetes Secret), never a `VITE_` variable.
-- `/pipeline/health` returns per-query detail only to users with the `admin` role (`has_role`).
+- `/pipeline/health` is admin-only: the server calls `public.has_role(sub, 'admin')` with the caller's token and returns 403 `FORBIDDEN` otherwise.
 
 ### 4.2 Response envelope
 
@@ -94,21 +96,21 @@ All routes are TanStack Start server routes under `/api/analytics`. Responses ar
 }
 ```
 
-Errors use `{ "error": { "code": "UNAUTHORIZED", "message": "..." } }` with status 400 (invalid parameters), 401 (missing or invalid token), 403 (not allowed) or 503 (serving store unavailable). No stack traces. An unknown symbol returns `200` with empty data.
+Errors use `{ "error": { "code": "UNAUTHORIZED", "message": "..." } }`: 400 `INVALID_PARAMETER`, 401 `UNAUTHORIZED` (missing, invalid or expired token; checked before the route is resolved, so anonymous callers cannot enumerate routes), 403 `FORBIDDEN`, 404 `NOT_FOUND`, 503 `SERVING_UNAVAILABLE` / `AUTH_UNAVAILABLE` (store or configuration missing) and 500 `INTERNAL`. No stack traces. An unknown symbol returns `200` with empty data.
 
-`stale` is computed at request time: `now - last_event_time > stale_after_seconds`. Defaults: 120 s for latest quotes, 300 s for speed windows, 26 h for batch-only views. A stale value is returned with `stale: true` and must be shown as stale, never as current.
+`stale` is computed at request time: `now - last_event_time > stale_after_seconds`. Defaults: 120 s for latest quotes, 300 s for speed windows and pipeline progress, 26 h for batch views and finalized sessions. A missing timestamp counts as stale, and `freshness` is `null` when there is no data. A stale value is returned with `stale: true` and must be shown as stale, never as current.
 
 ### 4.3 Routes
 
 | Route | Query parameters | Source | `data` |
 | --- | --- | --- | --- |
 | `GET /api/analytics/market/latest` | `symbols` (comma list, max 50; default all) | `latest_market_metrics` | `[{ asset_symbol, last_price, currency, source, last_event_time, quote_age_seconds, stale, window_return_pct }]` |
-| `GET /api/analytics/market/series` | `symbol` (required), `granularity` (`1m` \| `5m_rolling` \| `1d`), `from`, `to`, `limit` (≤ 1000) | `asset_time_series_summary` + `lambda_state` | `{ asset_symbol, granularity, points: [{ window_start, window_end, open, high, low, close, avg_price, price_stddev, volatility_pct, return_pct, volume, quote_count, layer, provisional }] }` |
-| `GET /api/analytics/me/activity` | `granularity` (`5m`), `limit` (≤ 288) | `user_activity_windows` + `lambda_state` | `{ points: [{ window_start, window_end, trade_count, buy_count, sell_count, action_count, turnover, fees, distinct_assets, buy_ratio, overtrading_signal, layer, provisional }] }` |
-| `GET /api/analytics/me/sessions` | `limit` (≤ 50) | `user_sessions` | `[{ session_start, session_end, session_seconds, event_count, trade_count, distinct_assets }]` |
+| `GET /api/analytics/market/series` | `symbol` (required), `granularity` (`1m` \| `5m_rolling` \| `1d`, default `1m`), `from`, `to` (on `window_start`), `limit` (≤ 1000, default 200; the most recent windows, ascending) | `asset_time_series_summary` + `lambda_state` | `{ asset_symbol, granularity, points: [{ window_start, window_end, open, high, low, close, avg_price, price_stddev, volatility_pct, return_pct, volume, quote_count, layer, provisional }] }` |
+| `GET /api/analytics/me/activity` | `granularity` (`5m` \| `1d`, default `5m`), `limit` (≤ 288, default 48) | `user_activity_windows` + `lambda_state` | `{ points: [{ window_start, window_end, trade_count, buy_count, sell_count, action_count, turnover, fees, distinct_assets, buy_ratio, overtrading_signal, layer, provisional }] }` |
+| `GET /api/analytics/me/sessions` | `limit` (≤ 50, default 20) | `user_sessions` | `[{ session_start, session_end, session_seconds, event_count, trade_count, distinct_assets }]` |
 | `GET /api/analytics/me/risk` | — | `portfolio_risk_views` (B) | B's risk document, plus `computed_at`, `run_id`, `source_window` |
 | `GET /api/analytics/me/segment` | — | `investor_behavior_segments` (B) | `{ segment_id, segment_label, features, model_version, computed_at }` |
-| `GET /api/analytics/pipeline/health` | — | `pipeline_quality_metrics`, `lambda_state` | `{ queries: [{ query_name, batch_id, timestamp, input_rows_per_second, processed_rows_per_second, watermark, rows_dropped_by_watermark, state_rows_total }], gate: { invalid, too_late, by_error_code }, lambda: [{ dataset, batch_cutoff, batch_run_id }] }` |
+| `GET /api/analytics/pipeline/health` (admin) | — | `pipeline_quality_metrics`, `lambda_state` | `{ queries: [{ query_name, batch_id, timestamp, input_rows_per_second, processed_rows_per_second, watermark, rows_dropped_by_watermark, state_rows_total }], gate: { window_hours: 24, batches, invalid, too_late, by_error_code }, lambda: [{ dataset, batch_cutoff, batch_run_id }] }` |
 
 `overtrading_signal` and segments are educational heuristics; the UI must label them that way (spec section 6.4).
 
@@ -122,9 +124,9 @@ Errors use `{ "error": { "code": "UNAUTHORIZED", "message": "..." } }` with stat
 - `user_id` must match `^usr_[a-f0-9]{64}$`. `KNOWN_ASSET_SYMBOLS` (same list as the gateway ConfigMap) enables `UNKNOWN_SYMBOL`.
 - Invalid events go to `<DIAGNOSTICS_ROOT>/dead_letter/` with one of the error codes in `spark/lib/envelope.py`. The gateway already rejects them before Kafka, so this path only catches producer bugs.
 
-**Person B (batch):** write batch windows with `serving.mongo_sink.MongoUpsertWriter(layer="batch")` (or the same document shape), use the granularity labels above and the same `close_price` / last-volume semantics, then call `publish_batch_cutoff`.
+**Person B (batch):** write batch windows with `serving.mongo_sink.MongoUpsertWriter(layer="batch")` (or the same document shape), use the granularity labels above and the same `close_price` / last-volume semantics, then call `publish_batch_cutoff` with dataset `market:<granularity>` or `user_activity:<granularity>`. A published cutoff promises that batch documents exist for **every** window (all symbols / all users) ending at or before it; speed documents before the cutoff are no longer served. `portfolio_risk_views` and `investor_behavior_segments` are read by `user_id` (the `usr_` pseudonym) and newest `computed_at`.
 
-**Person D (platform/UI):** the API needs a Node.js server runtime for the MongoDB driver. Whether the official driver works inside Cloudflare Workers (`wrangler.jsonc`) has not been verified; on Kubernetes the app container runs Node, which is the assumed target.
+**Person D (platform/UI):** use `fetchAnalytics` from `src/lib/analytics.ts` with the user's Supabase access token, show `meta.freshness.stale` and `provisional` points as such, and keep `meta.disclaimer` visible. The API uses the official `mongodb` driver (added to `package.json`); `npm run build` produces a Node server bundle that imports it, which is the assumed Kubernetes target. Whether it runs inside Cloudflare Workers (`wrangler.jsonc`) has not been verified. `package-lock.json` was already out of sync with `package.json` on `main` (`npm ci` fails on missing `workerd` entries), so it was not regenerated in this change.
 
 ## 6. Open decisions
 

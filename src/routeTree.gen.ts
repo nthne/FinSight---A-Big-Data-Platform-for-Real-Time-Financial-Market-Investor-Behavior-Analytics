@@ -22,6 +22,7 @@ import { Route as AssetSymbolRouteImport } from './routes/asset.$symbol'
 import { Route as ApiInsightRouteImport } from './routes/api/insight'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as ApiMarketRefreshRouteImport } from './routes/api/market/refresh'
+import { Route as ApiAnalyticsSplatRouteImport } from './routes/api/analytics.$'
 
 const TradingRoute = TradingRouteImport.update({
   id: '/trading',
@@ -88,6 +89,11 @@ const ApiMarketRefreshRoute = ApiMarketRefreshRouteImport.update({
   path: '/api/market/refresh',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAnalyticsSplatRoute = ApiAnalyticsSplatRouteImport.update({
+  id: '/api/analytics/$',
+  path: '/api/analytics/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -102,6 +108,7 @@ export interface FileRoutesByFullPath {
   '/api/chat': typeof ApiChatRoute
   '/api/insight': typeof ApiInsightRoute
   '/asset/$symbol': typeof AssetSymbolRoute
+  '/api/analytics/$': typeof ApiAnalyticsSplatRoute
   '/api/market/refresh': typeof ApiMarketRefreshRoute
 }
 export interface FileRoutesByTo {
@@ -117,6 +124,7 @@ export interface FileRoutesByTo {
   '/api/chat': typeof ApiChatRoute
   '/api/insight': typeof ApiInsightRoute
   '/asset/$symbol': typeof AssetSymbolRoute
+  '/api/analytics/$': typeof ApiAnalyticsSplatRoute
   '/api/market/refresh': typeof ApiMarketRefreshRoute
 }
 export interface FileRoutesById {
@@ -133,6 +141,7 @@ export interface FileRoutesById {
   '/api/chat': typeof ApiChatRoute
   '/api/insight': typeof ApiInsightRoute
   '/asset/$symbol': typeof AssetSymbolRoute
+  '/api/analytics/$': typeof ApiAnalyticsSplatRoute
   '/api/market/refresh': typeof ApiMarketRefreshRoute
 }
 export interface FileRouteTypes {
@@ -150,6 +159,7 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/api/insight'
     | '/asset/$symbol'
+    | '/api/analytics/$'
     | '/api/market/refresh'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -165,6 +175,7 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/api/insight'
     | '/asset/$symbol'
+    | '/api/analytics/$'
     | '/api/market/refresh'
   id:
     | '__root__'
@@ -180,6 +191,7 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/api/insight'
     | '/asset/$symbol'
+    | '/api/analytics/$'
     | '/api/market/refresh'
   fileRoutesById: FileRoutesById
 }
@@ -196,6 +208,7 @@ export interface RootRouteChildren {
   ApiChatRoute: typeof ApiChatRoute
   ApiInsightRoute: typeof ApiInsightRoute
   AssetSymbolRoute: typeof AssetSymbolRoute
+  ApiAnalyticsSplatRoute: typeof ApiAnalyticsSplatRoute
   ApiMarketRefreshRoute: typeof ApiMarketRefreshRoute
 }
 
@@ -292,6 +305,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiMarketRefreshRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/analytics/$': {
+      id: '/api/analytics/$'
+      path: '/api/analytics/$'
+      fullPath: '/api/analytics/$'
+      preLoaderRoute: typeof ApiAnalyticsSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -308,6 +328,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiChatRoute: ApiChatRoute,
   ApiInsightRoute: ApiInsightRoute,
   AssetSymbolRoute: AssetSymbolRoute,
+  ApiAnalyticsSplatRoute: ApiAnalyticsSplatRoute,
   ApiMarketRefreshRoute: ApiMarketRefreshRoute,
 }
 export const routeTree = rootRouteImport

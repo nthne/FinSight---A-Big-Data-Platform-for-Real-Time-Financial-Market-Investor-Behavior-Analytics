@@ -92,7 +92,17 @@ python -m serving.mongo_setup --uri mongodb://127.0.0.1:27017   # optional, test
 FINSIGHT_TEST_MONGO_URI=mongodb://127.0.0.1:27017 python -m pytest serving/tests spark/tests -v
 ```
 
-Without `FINSIGHT_TEST_MONGO_URI` the MongoDB tests are skipped. Each test
+Without `FINSIGHT_TEST_MONGO_URI` the MongoDB tests are skipped.
+
+API integration tests (Windows or Linux, Node.js 22 on `PATH`, after `npm install`):
+
+```bash
+FINSIGHT_TEST_MONGO_URI=mongodb://127.0.0.1:27017 python -m pytest tests/integration/test_analytics_api.py -v
+```
+
+They start `vite dev` on a free port with `SUPABASE_URL` pointing at an
+in-process fake of the two Supabase endpoints the API calls
+(`/auth/v1/user` for token verification, `/rest/v1/rpc/has_role`). Each test
 uses its own database and drops it afterwards. `FINSIGHT_TEST_SPARK_MEMORY`
 (default `768m`) limits the local driver JVM.
 
@@ -107,6 +117,6 @@ uses its own database and drops it afterwards. `FINSIGHT_TEST_SPARK_MEMORY`
 | Lambda reconciliation rule | implemented, tested |
 | Kafka source | implemented, **not yet run against a broker** (Person A's Kafka 4.3.1 compose/K8s profile is now available) |
 | S3A checkpoints and outputs | configured, **not yet run against MinIO** |
-| HTTP routes `/api/analytics/*` | contract only (`api_contract.md`) |
+| HTTP routes `/api/analytics/*` | implemented (`src/routes/api/analytics.$.ts`, `src/lib/analytics*.ts`); 14 integration tests pass through `vite dev` + MongoDB 8.0 with a fake Supabase Auth (`tests/integration/`) |
 | Container image and Kubernetes manifests for the streaming jobs | to do with Person D |
 | Lessons 3, 5, 11 | to do (Week 5) |
