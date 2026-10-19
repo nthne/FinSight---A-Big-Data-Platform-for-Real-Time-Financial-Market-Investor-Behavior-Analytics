@@ -17,6 +17,20 @@ The final rebuild smoke test on 2026-10-19 repeated the health/readiness checks,
 
 The first append attempt exposed a PyArrow directory-mode issue. It failed before writing run metadata and before committing offsets. The corrected `overwrite_or_ignore` mode is safe here because every file name contains an immutable validated run ID and reusing a run ID is rejected.
 
+## Docker Desktop Kubernetes run
+
+On 2026-10-19 the `docker-desktop` context was available with node `desktop-control-plane` Ready on Kubernetes `v1.36.1`. The Member A profile applied the namespace, local development Secret, Kafka 4.3.1 KRaft StatefulSet, MinIO Deployment, ingestion gateway, topic-init Job, storage-init Job and Bronze CronJob.
+
+Observed results after the final Kafka PVC fix (`KAFKA_LOG_DIRS=/var/lib/kafka/data`):
+
+1. Kafka, MinIO and ingestion reached `1/1` Ready; the topic-init and storage-init Jobs completed.
+2. Kafka restart retained `__consumer_offsets` and all five application topics.
+3. The gateway returned `{"status":"ready"}` and accepted event `f3c22b1f-0e8c-48ea-9da4-8c5a818437f7`.
+4. The final Bronze Job reported `accepted=1`, `rejected=0`, `duplicate=0`; MinIO verification found two event IDs in two immutable Parquet runs with `SNAPPY` compression.
+5. Deleting the gateway pod triggered a successful Deployment rollout and `/readyz` returned ready again.
+
+This is local single-broker coursework evidence. MongoDB, Spark, producer and streaming workloads are not present in this repository and remain shared-platform/member-owned follow-ups.
+
 ## Guarantees
 
 - Producer event IDs are deterministic across retries.
