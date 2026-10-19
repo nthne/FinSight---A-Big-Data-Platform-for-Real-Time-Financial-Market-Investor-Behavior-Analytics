@@ -124,7 +124,7 @@ def _stop(process: subprocess.Popen) -> None:
 
 
 @pytest.fixture(scope="session")
-def analytics_db(mongo_client):
+def analytics_db(mongo_client):  # noqa: F811 - pytest fixture injection
     from serving.mongo_setup import apply_schema
 
     db = mongo_client[f"finsight_api_test_{uuid.uuid4().hex[:8]}"]

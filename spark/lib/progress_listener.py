@@ -25,10 +25,16 @@ def _parse_ts(value: str | None) -> dt.datetime | None:
 
 
 def progress_as_dict(progress) -> dict:
-    """Accept a StreamingQueryProgress object or an already-parsed dict."""
-    if isinstance(progress, dict):
-        return progress
-    return json.loads(progress.json)
+    """Accept a StreamingQueryProgress object or an already-parsed dict.
+
+    In PySpark 4 ``StreamingQueryProgress`` is itself a ``dict`` subclass whose
+    values include ``uuid.UUID`` objects, which BSON cannot encode, so prefer
+    its ``json`` rendering (plain JSON types) whenever it has one.
+    """
+    rendered = getattr(progress, "json", None)
+    if isinstance(rendered, str):
+        return json.loads(rendered)
+    return dict(progress)
 
 
 def progress_doc(progress: dict) -> dict:

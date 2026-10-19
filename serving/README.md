@@ -18,6 +18,8 @@ spark/jobs/streaming/
   event_gate.py                   dead-letter, late-event diagnostics, quality counters,
                                   curated Parquet sink, complete-mode demo
   common.py                       foreachBatch writer, query start-up, run loop
+  speed_layer.py                  runs several jobs in one SparkSession (small deployments)
+  Dockerfile                      speed-layer image (connector jars resolved at build time)
 serving/
   keys.py                         deterministic serving keys + user pseudonymization
   mongo_sink.py                   idempotent / guarded MongoDB upserts
@@ -25,6 +27,7 @@ serving/
   mongo_schema.json               collections, validators, indexes (single source)
   mongo_setup.py, mongo_schema.js apply the schema (Python / mongosh)
   api_contract.md                 serving collections + HTTP API contract
+  smoke/streaming_e2e.py          end-to-end smoke test through the ingestion gateway
 spark/tests, serving/tests        pytest suites (see "Tests")
 docs/evidence/                    streaming-semantics.md, recovery-test.md
 ```
@@ -115,8 +118,9 @@ uses its own database and drops it afterwards. `FINSIGHT_TEST_SPARK_MEMORY`
 | Late-event classification + diagnostics | implemented, tested |
 | Idempotent sink, restart / replay / crash-retry | implemented, tested against MongoDB 8.0 |
 | Lambda reconciliation rule | implemented, tested |
-| Kafka source | implemented, **not yet run against a broker** (Person A's Kafka 4.3.1 compose/K8s profile is now available) |
-| S3A checkpoints and outputs | configured, **not yet run against MinIO** |
+| Kafka source | run end to end against Person A's Kafka 4.3.1 gateway profile (`docs/evidence/streaming-integration.md`) |
+| S3A checkpoints and outputs | run against MinIO; restart resumes from the S3A checkpoints and a duplicate replay leaves the serving view unchanged |
 | HTTP routes `/api/analytics/*` | implemented (`src/routes/api/analytics.$.ts`, `src/lib/analytics*.ts`); 14 integration tests pass through `vite dev` + MongoDB 8.0 with a fake Supabase Auth (`tests/integration/`) |
-| Container image and Kubernetes manifests for the streaming jobs | to do with Person D |
+| Container image and local compose profile | `spark/jobs/streaming/Dockerfile`, `deploy/docker-compose.streaming.yml`, smoke test `serving/smoke/streaming_e2e.py` |
+| Kubernetes manifest for the streaming jobs | to do (needs the platform MongoDB service from Person D) |
 | Lessons 3, 5, 11 | to do (Week 5) |
