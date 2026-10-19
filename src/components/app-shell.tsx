@@ -118,8 +118,24 @@ export function AppShell() {
 
   useEffect(() => {
     let cancelled = false;
+    const useLocalMarketRefresh = import.meta.env.VITE_MARKET_REFRESH_MODE === "local";
     const refreshMarketData = async () => {
+      if (!user?.id) return;
       try {
+        if (useLocalMarketRefresh) {
+          const {
+            data: { session },
+          } = await supabase.auth.getSession();
+          if (!session?.access_token) return;
+
+          const response = await fetch("/api/market/refresh", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${session.access_token}` },
+          });
+          if (!response.ok) throw new Error(`Local market refresh returned HTTP ${response.status}`);
+          return;
+        }
+
         const [quotesResult, cryptoResult] = await Promise.all([
           supabase.functions.invoke("market-refresh", { body: { mode: "quotes" } }),
           supabase.functions.invoke("market-refresh", { body: { mode: "crypto" } }),
@@ -145,7 +161,7 @@ export function AppShell() {
       cancelled = true;
       window.clearInterval(intervalId);
     };
-  }, []);
+  }, [user?.id]);
 
   return (
     <SidebarProvider>

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  buildMarketQuoteEvent,
   buildPortfolioSnapshotEvent,
   buildTradeEvent,
   buildUserActionEvent,
@@ -60,6 +61,39 @@ test("builds user action and portfolio snapshot events", () => {
   assert.equal(action.event_type, "user_action");
   assert.equal(snapshot.event_type, "portfolio_snapshot");
   assert.equal(snapshot.payload.pnl, -20);
+});
+
+test("builds a stable market quote event for the local gateway", () => {
+  const first = buildMarketQuoteEvent(
+    {
+      symbol: " aapl ",
+      close: 6287500,
+      source: "Yahoo Finance",
+      timestamp: "2026-10-15T09:30:00Z",
+      volume: 42133700,
+      currency: "vnd",
+      providerSymbol: "AAPL",
+    },
+    "2026-10-15T09:30:02Z",
+  );
+  const second = buildMarketQuoteEvent(
+    {
+      symbol: "AAPL",
+      close: 6287500,
+      source: "yahoo_finance",
+      timestamp: "2026-10-15T09:30:00Z",
+      volume: 42133700,
+      currency: "VND",
+      providerSymbol: "AAPL",
+    },
+    "2026-10-15T09:30:02Z",
+  );
+
+  assert.equal(first.event_type, "market_quote");
+  assert.equal(first.asset_symbol, "AAPL");
+  assert.equal(first.event_id, second.event_id);
+  assert.equal(first.payload.close_price, 6287500);
+  assert.equal(first.payload.currency, "VND");
 });
 
 test("publishes only through configured server gateway", async () => {

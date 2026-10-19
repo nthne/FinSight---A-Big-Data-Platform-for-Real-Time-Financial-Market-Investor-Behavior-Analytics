@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 
 export type FinSightEventType =
+  | "market_quote"
   | "trade_executed"
   | "user_action"
   | "portfolio_snapshot";
@@ -13,8 +14,18 @@ export interface FinSightEvent {
   event_time: string;
   ingestion_time: string;
   asset_symbol?: string;
-  user_id: string;
+  user_id?: string;
   payload: Record<string, unknown>;
+}
+
+export interface MarketQuoteRecord {
+  symbol: string;
+  close: number;
+  source: string;
+  timestamp?: string;
+  volume?: number | null;
+  currency?: string | null;
+  providerSymbol?: string | null;
 }
 
 export interface TradeRecord {
@@ -66,6 +77,14 @@ function positive(value: number, field: string): number {
 function nonNegative(value: number, field: string): number {
   if (!Number.isFinite(value) || value < 0) throw new Error(`${field} must be non-negative`);
   return value;
+}
+
+function stableEventId(seed: string): string {
+  const bytes = createHash("sha256").update(seed).digest().subarray(0, 16);
+  bytes[6] = (bytes[6] & 0x0f) | 0x50;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = bytes.toString("hex");
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
 export function pseudonymizeUserId(userId: string, salt: string): string {
@@ -136,6 +155,41 @@ export function buildPortfolioSnapshotEvent(
       risk_score: record.riskScore ?? null,
       diversification_score: record.diversificationScore ?? null,
     },
+  };
+}
+
+export function buildMarketQuoteEvent(
+  record: MarketQuoteRecord,
+  ingestionTime = new Date().toISOString(),
+): FinSightEvent {
+  const symbol = record.symbol.trim().toUpperCase();
+  const source = record.source.trim().toLowerCase().replace(/[^a-z0-9._-]/g, "_");
+  if (!symbol) throw new Error("symbol is required");
+  if (!source) throw new Error("source is required");
+  if (!Number.isFinite(record.close) || record.close <= 0) {
+    throw new Error("close must be positive");
+  }
+
+  const eventTime = timestamp(record.timestamp ?? ingestionTime);
+  const acceptedAt = timestamp(ingestionTime);
+  const payload: Record<string, unknown> = {
+    close_price: record.close,
+    currency: record.currency?.trim().toUpperCase() || "VND",
+  };
+  if (record.volume != null && Number.isFinite(record.volume) && record.volume >= 0) {
+    payload.volume = record.volume;
+  }
+  if (record.providerSymbol?.trim()) payload.provider_symbol = record.providerSymbol.trim();
+
+  return {
+    event_id: stableEventId(`market_quote|${source}|${symbol}|${eventTime}`),
+    event_type: "market_quote",
+    schema_version: "1.0.0",
+    source,
+    event_time: eventTime,
+    ingestion_time: acceptedAt,
+    asset_symbol: symbol,
+    payload,
   };
 }
 
