@@ -1,0 +1,110 @@
+{
+  "_comment": "Serving-layer collections, validators and indexes. Applied by serving/mongo_setup.py (Python) and serving/mongo_schema.js (mongosh). Both are idempotent.",
+  "collections": {
+    "asset_time_series_summary": {
+      "owner": "C (speed) + B (batch)",
+      "validator": {
+        "$jsonSchema": {
+          "bsonType": "object",
+          "required": ["series_key", "layer", "asset_symbol", "granularity", "window_start", "window_end", "computed_at", "run_id"],
+          "properties": {
+            "series_key": { "bsonType": "string" },
+            "layer": { "enum": ["batch", "speed"] },
+            "asset_symbol": { "bsonType": "string" },
+            "granularity": { "bsonType": "string" },
+            "window_start": { "bsonType": "date" },
+            "window_end": { "bsonType": "date" },
+            "quote_count": { "bsonType": ["int", "long"], "minimum": 0 },
+            "computed_at": { "bsonType": "date" },
+            "run_id": { "bsonType": "string" }
+          }
+        }
+      },
+      "indexes": [
+        { "name": "series_layer_unique", "keys": { "series_key": 1, "layer": 1 }, "unique": true },
+        { "name": "asset_series_lookup", "keys": { "asset_symbol": 1, "granularity": 1, "layer": 1, "window_end": -1 } },
+        { "name": "layer_prune", "keys": { "layer": 1, "granularity": 1, "window_end": 1 } }
+      ]
+    },
+    "latest_market_metrics": {
+      "owner": "C",
+      "validator": {
+        "$jsonSchema": {
+          "bsonType": "object",
+          "required": ["asset_symbol", "last_price", "last_event_time", "computed_at"],
+          "properties": {
+            "asset_symbol": { "bsonType": "string" },
+            "last_price": { "bsonType": "double", "minimum": 0 },
+            "last_event_time": { "bsonType": "date" },
+            "computed_at": { "bsonType": "date" }
+          }
+        }
+      },
+      "indexes": [{ "name": "freshness", "keys": { "last_event_time": -1 } }]
+    },
+    "user_activity_windows": {
+      "owner": "C (speed) + B (batch)",
+      "validator": {
+        "$jsonSchema": {
+          "bsonType": "object",
+          "required": ["series_key", "layer", "user_id", "granularity", "window_start", "window_end", "computed_at"],
+          "properties": {
+            "layer": { "enum": ["batch", "speed"] },
+            "user_id": { "bsonType": "string", "pattern": "^usr_[a-f0-9]{64}$" },
+            "window_start": { "bsonType": "date" },
+            "window_end": { "bsonType": "date" },
+            "computed_at": { "bsonType": "date" }
+          }
+        }
+      },
+      "indexes": [
+        { "name": "series_layer_unique", "keys": { "series_key": 1, "layer": 1 }, "unique": true },
+        { "name": "user_series_lookup", "keys": { "user_id": 1, "granularity": 1, "layer": 1, "window_end": -1 } }
+      ]
+    },
+    "user_sessions": {
+      "owner": "C",
+      "validator": {
+        "$jsonSchema": {
+          "bsonType": "object",
+          "required": ["series_key", "user_id", "session_start", "session_end", "computed_at"],
+          "properties": {
+            "user_id": { "bsonType": "string", "pattern": "^usr_[a-f0-9]{64}$" },
+            "session_start": { "bsonType": "date" },
+            "session_end": { "bsonType": "date" },
+            "computed_at": { "bsonType": "date" }
+          }
+        }
+      },
+      "indexes": [{ "name": "user_recent_sessions", "keys": { "user_id": 1, "session_end": -1 } }]
+    },
+    "pipeline_quality_metrics": {
+      "owner": "C (stream/sink/gate) + A, B (their pipeline counters)",
+      "validator": { "$jsonSchema": { "bsonType": "object", "required": ["kind"] } },
+      "indexes": [
+        { "name": "kind_query_recent", "keys": { "kind": 1, "query_name": 1, "computed_at": -1 } },
+        { "name": "progress_recent", "keys": { "kind": 1, "query_name": 1, "timestamp": -1 } }
+      ]
+    },
+    "lambda_state": {
+      "owner": "B publishes cutoffs, C reads them",
+      "validator": {
+        "$jsonSchema": {
+          "bsonType": "object",
+          "required": ["batch_cutoff", "batch_run_id"],
+          "properties": { "batch_cutoff": { "bsonType": "date" }, "batch_run_id": { "bsonType": "string" } }
+        }
+      },
+      "indexes": []
+    },
+    "stream_state": { "owner": "C", "indexes": [] },
+    "portfolio_risk_views": {
+      "owner": "B",
+      "indexes": [{ "name": "user_recent", "keys": { "user_id": 1, "computed_at": -1 } }]
+    },
+    "investor_behavior_segments": {
+      "owner": "B",
+      "indexes": [{ "name": "user_recent", "keys": { "user_id": 1, "computed_at": -1 } }]
+    }
+  }
+}
