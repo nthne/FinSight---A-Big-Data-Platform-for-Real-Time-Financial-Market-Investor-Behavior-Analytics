@@ -81,6 +81,18 @@ def test_bronze_run_is_immutable(tmp_path: Path, contract) -> None:
         writer.write_run([load_fixture("valid-market-quote.json")], run_id="immutable-run")
 
 
+def test_distinct_runs_append_without_overwriting(tmp_path: Path, contract) -> None:
+    writer = BronzeWriter(str(tmp_path), contract)
+    event = load_fixture("valid-market-quote.json")
+    writer.write_run([event], run_id="append-run-001")
+    writer.write_run([event], run_id="append-run-002")
+    parquet_files = list((tmp_path / "bronze").glob("event_type=*/event_date=*/*.parquet"))
+    assert {path.name for path in parquet_files} == {
+        "run-append-run-001-0.parquet",
+        "run-append-run-002-0.parquet",
+    }
+
+
 def test_replay_preserves_original_event_id(tmp_path: Path, contract) -> None:
     event = load_fixture("valid-market-quote.json")
     BronzeWriter(str(tmp_path), contract).write_run([event], run_id="replay-run")

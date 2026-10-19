@@ -159,7 +159,7 @@ class BronzeWriter:
                 partitioning_flavor="hive",
                 basename_template=f"run-{run_id}-{{i}}.parquet",
                 file_options=ds.ParquetFileFormat().make_write_options(compression="snappy"),
-                existing_data_behavior="error",
+                existing_data_behavior="overwrite_or_ignore",
             )
 
         metadata_document = {
