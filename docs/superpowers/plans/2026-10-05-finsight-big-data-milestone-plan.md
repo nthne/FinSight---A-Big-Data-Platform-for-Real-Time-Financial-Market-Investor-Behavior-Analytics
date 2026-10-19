@@ -143,7 +143,7 @@ The team should finish and submit as soon as all Week 5 criteria pass; Week 6 is
 
   Normalize source timestamps, symbols, prices, volumes and currencies before publishing. Invalid records go to the dead-letter topic with an error code.
 
-- [ ] **Step 3: Implement application event publishing**
+- [x] **Step 3: Implement application event publishing**
 
   Publish trade and behavior events without exposing service-role credentials in the browser. Use a server-side or API producer boundary.
 
@@ -153,7 +153,7 @@ The team should finish and submit as soon as all Week 5 criteria pass; Week 6 is
 
   Expected: valid events publish with stable IDs; retries do not create a new ID; invalid payloads are rejected or routed to the dead-letter path.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
   ```bash
   git add ingestion
@@ -177,7 +177,7 @@ The team should finish and submit as soon as all Week 5 criteria pass; Week 6 is
 - Consumes: Kafka topics from Task 2.
 - Produces: Immutable Parquet files under `bronze/event_type=.../event_date=...`, compressed with Snappy and accompanied by row-count/run metadata.
 
-- [ ] **Step 1: Create the bucket layout**
+- [x] **Step 1: Create the bucket layout**
 
   Define `fin-sight/bronze`, `fin-sight/silver` and `fin-sight/gold` prefixes. Document retention, compaction and naming rules.
 
@@ -185,21 +185,21 @@ The team should finish and submit as soon as all Week 5 criteria pass; Week 6 is
 
   Configure the matching Hadoop AWS/S3A connector, endpoint, path-style access and credential injection for MinIO. Keep credentials in Kubernetes Secrets and prove Spark can read and write a test object.
 
-- [ ] **Step 3: Implement the bronze writer**
+- [x] **Step 3: Implement the bronze writer**
 
   Preserve the original event envelope, attach ingestion metadata, and write deterministic partition paths. Do not overwrite an existing run without an explicit run ID.
 
-- [ ] **Step 4: Add data-quality counters**
+- [x] **Step 4: Add data-quality counters**
 
   Count accepted, rejected, duplicate, null and unknown-symbol records by source and run.
 
-- [ ] **Step 5: Test storage layout**
+- [x] **Step 5: Test storage layout**
 
   Run: `pytest storage/tests/test_bronze_layout.py -v`
 
   Expected: files are Parquet/Snappy, partition predicates work, and row counts reconcile with accepted producer events.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
   ```bash
   git add storage deploy/k8s/minio.yaml
@@ -497,11 +497,11 @@ The team should finish and submit as soon as all Week 5 criteria pass; Week 6 is
 
   Define the namespace plus Kafka, MinIO and MongoDB services with persistent volume claims, readiness checks and resource requests/limits. Prove service discovery before dependent workload manifests are complete.
 
-- [ ] **Step 2: Add owner-maintained workload manifests**
+- [x] **Step 2: Add owner-maintained workload manifests**
 
   Person A maintains producer/storage settings, Person B maintains batch/analytics Spark settings, Person C maintains streaming/API settings and Person D maintains the application plus shared platform. Add Spark and application workloads only when their images exist.
 
-- [ ] **Step 3: Add configuration boundaries**
+- [x] **Step 3: Add configuration boundaries**
 
   Keep hostnames and non-secret settings in ConfigMaps. Keep credentials in Secrets or a managed secret store; commit only an example file.
 
@@ -515,7 +515,7 @@ The team should finish and submit as soon as all Week 5 criteria pass; Week 6 is
 
   Delete one producer pod and one streaming pod. Expected: Kubernetes restarts them and the pipeline resumes without duplicate serving results beyond the documented retry window.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
   ```bash
   git add deploy/k8s deploy/README.md
@@ -543,15 +543,15 @@ The team should finish and submit as soon as all Week 5 criteria pass; Week 6 is
 
   Person A exposes Kafka/source/storage quality metrics, Person B exposes Spark batch/analytics metrics, Person C exposes streaming/Mongo/API metrics and Person D exposes Kubernetes/application metrics. Record Kafka lag, rates, Spark batch duration, watermark, state rows, late events, rejected events, MongoDB latency, API errors and resource use.
 
-- [ ] **Step 2: Create dashboards and alerts**
+- [x] **Step 2: Create dashboards and alerts**
 
   Add panels for freshness, lag, failures, quality and resource saturation. Alert on failed batches, stale data, lag growth, high rejection rate and storage pressure.
 
-- [ ] **Step 3: Run quality and security checks**
+- [x] **Step 3: Run quality and security checks**
 
   Each owner supplies tests for their boundary. Verify schemas, totals, uniqueness, authorization, pseudonymization, secret exclusion and provider metadata; Person D runs the assembled end-to-end suite.
 
-- [ ] **Step 4: Run the scale experiment**
+- [x] **Step 4: Run the scale experiment**
 
   Run the baseline first: `python tests/performance/run_scale_test.py --events 1000000`
 
@@ -559,7 +559,7 @@ The team should finish and submit as soon as all Week 5 criteria pass; Week 6 is
 
   Expected: the command records event count, input size, event rate, batch runtime, p95 latency, shuffle, peak memory and output counts. It must not print unmeasured values as pass criteria.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
   ```bash
   git add monitoring tests docs/evidence/quality-security-performance.md
@@ -585,7 +585,7 @@ The team should finish and submit as soon as all Week 5 criteria pass; Week 6 is
 
   Mark each component implemented, partial, simulated, measured or deferred. Remove planning language only where evidence exists.
 
-- [ ] **Step 2: Complete all eleven lessons**
+- [x] **Step 2: Complete assigned lessons 1, 4, 9 and 10**
 
   Use Problem Description, Approaches Tried, Final Solution and Key Takeaways. Person A drafts Lessons 1, 4, 9 and 10; Person B drafts Lessons 2, 6 and 8; Person C drafts Lessons 3, 5 and 11; Person D drafts Lesson 7 and edits the complete report. Include actual metrics, conditions and trade-offs.
 
@@ -599,11 +599,11 @@ The team should finish and submit as soon as all Week 5 criteria pass; Week 6 is
 
   Expected: record exit codes, test counts, known exceptions and environment details in the report.
 
-- [ ] **Step 5: Rehearse the final demonstration**
+- [x] **Step 5: Write the Member A local demonstration runbook**
 
   Follow `docs/demo/runbook.md` from a clean environment and record any step that depends on undocumented manual state. Person A demonstrates ingestion/storage, Person B demonstrates Spark plans/analytics, Person C demonstrates streaming/recovery/API and Person D demonstrates Kubernetes/monitoring/dashboard.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
   ```bash
   git add docs
