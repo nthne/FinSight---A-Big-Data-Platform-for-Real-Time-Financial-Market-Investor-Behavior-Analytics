@@ -1,0 +1,47 @@
+groups:
+  - name: finsight.ingestion
+    rules:
+      - alert: FinSightIngestionGatewayDown
+        expr: up{job="finsight-ingestion"} == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: Ingestion gateway is unavailable
+          description: The ingestion gateway has not been scraped successfully for five minutes.
+      - alert: FinSightIngestionPublishFailures
+        expr: increase(finsight_ingestion_publish_failures_total[5m]) > 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: Kafka publish failures detected
+          description: Kafka delivery failures were recorded by the ingestion gateway.
+      - alert: FinSightIngestionRejectionRateHigh
+        expr: |
+          sum(rate(finsight_ingestion_rejected_total[10m]))
+          /
+          clamp_min(sum(rate(finsight_ingestion_accepted_total[10m])) + sum(rate(finsight_ingestion_rejected_total[10m])), 1)
+          > 0.05
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: Ingestion rejection rate is high
+          description: More than five percent of gateway events were rejected for ten minutes.
+      - alert: FinSightMarketEventsStale
+        expr: time() - max(finsight_market_event_timestamp_seconds) > 300
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Market event freshness is outside the five minute budget
+          description: Provider freshness requires investigation before serving data as current.
+      - alert: FinSightBronzeRunRejected
+        expr: increase(finsight_bronze_rejected_records_total[15m]) > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Bronze quality rejection detected
+          description: Inspect the immutable Bronze run metadata and DLQ for the source and error code.

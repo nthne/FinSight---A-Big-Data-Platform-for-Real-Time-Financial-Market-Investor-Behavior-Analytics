@@ -65,3 +65,27 @@ def test_gateway_rejects_invalid_event_and_exports_metric() -> None:
     assert publisher.records[0].value["error_code"] == "SCHEMA_VALIDATION_ERROR"
     assert metrics.rejected[("yahoo", "SCHEMA_VALIDATION_ERROR")] == 1
     assert "finsight_ingestion_rejected_total" in client.get("/metrics").text
+
+
+def test_gateway_reports_bounded_publish_failure() -> None:
+    class FailingPublisher(MemoryPublisher):
+        def publish(self, topic, key, value):
+            raise RuntimeError("broker unavailable")
+
+    metrics = IngestionMetrics()
+    contract = EventContract.from_file(
+        ROOT / "data-contracts" / "events.schema.json", known_symbols={"AAPL"}
+    )
+    client = TestClient(
+        create_app(
+            publisher=FailingPublisher(),
+            contract=contract,
+            ingestion_token="test-token",
+            metrics=metrics,
+        )
+    )
+    response = client.post(
+        "/v1/events", json=valid_event(), headers={"x-ingestion-token": "test-token"}
+    )
+    assert response.status_code == 503
+    assert metrics.publish_failures["market-quotes"] == 1

@@ -1,0 +1,49 @@
+{
+  "title": "FinSight Ingestion and Bronze",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": {"from": "now-6h", "to": "now"},
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Accepted events by type",
+      "datasource": {"type": "prometheus", "uid": "PROMETHEUS"},
+      "targets": [{"expr": "sum by (event_type) (rate(finsight_ingestion_accepted_total[5m]))", "legendFormat": "{{event_type}}"}],
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Rejected events by rule",
+      "datasource": {"type": "prometheus", "uid": "PROMETHEUS"},
+      "targets": [{"expr": "sum by (error_code) (rate(finsight_ingestion_rejected_total[5m]))", "legendFormat": "{{error_code}}"}],
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Kafka publish failures",
+      "datasource": {"type": "prometheus", "uid": "PROMETHEUS"},
+      "targets": [{"expr": "sum(increase(finsight_ingestion_publish_failures_total[1h]))"}],
+      "gridPos": {"h": 5, "w": 8, "x": 0, "y": 8}
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Market event age seconds",
+      "datasource": {"type": "prometheus", "uid": "PROMETHEUS"},
+      "targets": [{"expr": "time() - max(finsight_market_event_timestamp_seconds)", "unit": "s"}],
+      "gridPos": {"h": 5, "w": 8, "x": 8, "y": 8}
+    },
+    {
+      "id": 5,
+      "type": "table",
+      "title": "Bronze quality counters",
+      "datasource": {"type": "prometheus", "uid": "PROMETHEUS"},
+      "targets": [{"expr": "sum by (source, rule) (finsight_bronze_quality_records_total)", "format": "table"}],
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 8}
+    }
+  ]
+}

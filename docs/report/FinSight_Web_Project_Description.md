@@ -555,7 +555,7 @@ The report must label each item as implemented, partially implemented, simulated
 
 # 10 Lessons Learned Plan
 
-The sections below are the required structure for the final report. Before submission, replace planned evidence with actual experiment IDs, measurements, screenshots, logs and commit references. No result is claimed in this baseline document.
+The sections below are the required structure for the final report. Member A's measured evidence is linked from `docs/evidence/member-a-ingestion-storage.md` and `docs/evidence/quality-security-performance.md`; the other workstreams remain status-tracked until their owners attach equivalent measurements.
 
 ## Lesson 1: Reliable Multi-Source Data Ingestion
 
@@ -573,7 +573,7 @@ The sections below are the required structure for the final report. Before submi
 
 ### Final Solution
 
-Implement typed producers, stable event IDs, schema validation, retry/backoff, source timestamps, ingestion timestamps and deduplication. Measure accepted, rejected, duplicate, late and unknown-symbol rates per source.
+Member A implements typed producers, deterministic event IDs, schema validation, bounded Kafka delivery, source and ingestion timestamps, a dead-letter path and Bronze quality counters. The local suite recorded 24 passing Python quality/integration tests; the Docker run accepted a valid quote, routed it by symbol, wrote Snappy Parquet and counted a duplicate on a retry. The bounded guarantee is explicit: offsets commit only after a successful Bronze write, while a crash after the write and before commit can replay the same immutable event ID.
 
 ### Key Takeaways
 
@@ -642,7 +642,7 @@ Use Kafka offsets and Spark checkpoints for source progress, stable event/window
 
 ### Final Solution
 
-Use bronze/silver/gold Parquet zones, partition by event date and suitable dimensions, compress with Snappy, compact small files, and keep current dashboard documents in MongoDB. Measure scan size and query latency before and after pruning.
+Member A creates `bronze`, `silver` and `gold` object-store prefixes, writes immutable Snappy Parquet under `event_type` and `event_date` Hive partitions, preserves the raw envelope and Kafka metadata, and records per-run counters. The verified Docker run found the expected partition, Snappy compression and stable event ID; Silver/Gold compaction and serving remain owned by the downstream workstreams.
 
 ### Key Takeaways
 
@@ -757,7 +757,7 @@ Run controlled scale experiments by changing Kafka partitions, Spark executor co
 
 ### Final Solution
 
-Create deterministic fixtures, schema tests, reconciliation checks, streaming replay scenarios, performance runs and end-to-end checks. Store test conditions and results with the report.
+Create deterministic fixtures, schema tests, reconciliation checks, streaming replay scenarios, performance runs and end-to-end checks. Member A's current evidence is 24 Python tests, 6 TypeScript tests, a successful frontend build, a 1,000,000-event generation baseline at 13,695.16 events/second with sampled p95 generation latency 0.1238 ms, and a Docker Kafka-to-MinIO run. These figures describe only the measured boundaries and are not a claim for the complete Spark/Lambda platform.
 
 ### Key Takeaways
 
@@ -781,7 +781,7 @@ Create deterministic fixtures, schema tests, reconciliation checks, streaming re
 
 ### Final Solution
 
-Use least-privilege service accounts, Kubernetes Secrets, pseudonymous IDs, audit logs, retention rules, provider attribution and clear educational disclaimers. Restrict user-level analytics to authorized API requests.
+Member A keeps gateway and provider publishing server-side, uses pseudonymous SHA-256 user IDs with a server salt, requires an internal gateway token, ignores real Kubernetes secret files, and preserves provider/source metadata. The quality suite scans for common private-key material. Supabase production secrets and the MinIO provider/licensing/retention decision remain explicit human gates; no browser bundle receives the gateway token or service secret.
 
 ### Key Takeaways
 
