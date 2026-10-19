@@ -497,6 +497,8 @@ The team should finish and submit as soon as all Week 5 criteria pass; Week 6 is
 
   Define the namespace plus Kafka, MinIO and MongoDB services with persistent volume claims, readiness checks and resource requests/limits. Prove service discovery before dependent workload manifests are complete.
 
+  Member A's local Kubernetes slice is now deployed and evidenced for Kafka and MinIO. This overall step remains open because MongoDB and the shared platform baseline are not present in this repository.
+
 - [x] **Step 2: Add owner-maintained workload manifests**
 
   Person A maintains producer/storage settings, Person B maintains batch/analytics Spark settings, Person C maintains streaming/API settings and Person D maintains the application plus shared platform. Add Spark and application workloads only when their images exist.
@@ -511,9 +513,13 @@ The team should finish and submit as soon as all Week 5 criteria pass; Week 6 is
 
   Expected: all required workloads reach the documented ready state and communicate through Kubernetes service names.
 
+  Member A verified the local Kafka, MinIO, ingestion, topic-init, storage-init and Bronze workloads on Docker Desktop; the overall step remains open for the missing member-owned workloads.
+
 - [ ] **Step 5: Test restart behavior**
 
   Delete one producer pod and one streaming pod. Expected: Kubernetes restarts them and the pipeline resumes without duplicate serving results beyond the documented retry window.
+
+  Member A verified gateway rollout and Kafka PVC topic persistence. Producer and streaming pods are not available in this repository, so their restart test remains a human/team follow-up.
 
 - [x] **Step 6: Commit**
 

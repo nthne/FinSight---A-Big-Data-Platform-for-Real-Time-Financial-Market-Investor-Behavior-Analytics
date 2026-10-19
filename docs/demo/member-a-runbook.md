@@ -22,4 +22,6 @@ Show the JSON counters printed by the Bronze job, then run `storage.jobs.verify_
 
 ## Kubernetes path
 
-After a human supplies a Kubernetes context, real secrets and the shared `kafka:9092` service, apply `deploy/k8s` in the order documented by `deploy/README.md`. Show readiness probes, the Bronze CronJob run and the restart behavior. Do not present the local Compose result as Kubernetes evidence.
+For the local Docker Desktop profile, create a development-only Secret and apply the manifests in the order documented by `deploy/README.md`. The included `deploy/k8s/kafka.yaml` supplies a single-broker KRaft service; production still needs managed secrets and replicated platform services.
+
+Show `kubectl -n finsight get pods,jobs,cronjobs`, gateway `/readyz`, the topic-init output, the Bronze Job counters and `storage.jobs.verify_bronze` with the MinIO service name. Restart the gateway pod and Kafka pod; confirm the gateway rolls out and the five Kafka topics remain after the PVC-backed restart.
