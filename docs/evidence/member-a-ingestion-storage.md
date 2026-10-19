@@ -13,6 +13,8 @@ Observed results:
 5. A second run appended a new Parquet file, counted one duplicate and one accepted event, and did not overwrite the first run.
 6. The Kafka broker was restarted with its named volume. Topic initialization then reported all topics as `ready` without creating duplicates, and the gateway accepted a request after the restart.
 
+The final rebuild smoke test on 2026-10-19 repeated the health/readiness checks, returned HTTP 202 for a valid event and HTTP 422 for the missing-event-ID fixture, then landed a Bronze batch with `accepted=1`, `duplicate=2`, `rejected=2`. Verification found three immutable Parquet run files, one stable event ID and Snappy compression.
+
 The first append attempt exposed a PyArrow directory-mode issue. It failed before writing run metadata and before committing offsets. The corrected `overwrite_or_ignore` mode is safe here because every file name contains an immutable validated run ID and reusing a run ID is rejected.
 
 ## Guarantees
