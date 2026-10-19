@@ -1,0 +1,9 @@
+# Build context for spark/jobs/streaming/Dockerfile: only the speed-layer code.
+*
+!spark/
+!serving/
+!storage/minio/spark-defaults.conf
+spark/tests
+serving/tests
+**/__pycache__
+**/*.pyc

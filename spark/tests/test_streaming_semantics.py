@@ -172,8 +172,11 @@ def test_market_1m_dedups_and_applies_watermark(spark, tmp_path, cfg, mongo_db):
     assert _doc(mongo_db, "AAPL", "1m", 1) is None  # too-late q6 never aggregated
     assert mongo_db[ASSET_TIME_SERIES].count_documents({}) == 4
 
-    dropped = sum(progress_doc(progress_as_dict(p))["rows_dropped_by_watermark"] for p in query.recentProgress)
-    assert dropped == 1
+    progress = [progress_doc(progress_as_dict(p)) for p in query.recentProgress]
+    assert sum(doc["rows_dropped_by_watermark"] for doc in progress) == 1
+    # What MongoProgressListener stores must be BSON-encodable (PySpark 4 progress holds uuid.UUID values).
+    mongo_db["progress_check"].insert_many(progress)
+    assert all(isinstance(doc["query_run_id"], str) for doc in progress)
 
     # latest_market_metrics keeps 10:12:30 (111); the late 10:05 window must not replace it.
     latest = mongo_db[LATEST_MARKET].find_one({"_id": "AAPL"})

@@ -32,6 +32,10 @@ export async function authenticateSupabase(request: Request): Promise<Viewer> {
     isAdmin: () =>
       (admin ??= Promise.resolve(
         supabase.rpc("has_role", { _user_id: userId, _role: "admin" }),
-      ).then(({ data: isAdmin, error: rpcError }) => !rpcError && isAdmin === true)),
+      ).then(({ data: isAdmin, error: rpcError }) => {
+        // Fail closed, but make a broken role check visible instead of a silent 403.
+        if (rpcError) console.warn("analytics: has_role check failed", rpcError.message);
+        return !rpcError && isAdmin === true;
+      })),
   };
 }
