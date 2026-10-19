@@ -213,11 +213,19 @@ def main() -> int:
     parser.add_argument("fixture", type=Path, help="JSON provider record to normalize")
     parser.add_argument("--schema", type=Path, default=_default_schema_path())
     parser.add_argument("--known-symbol", action="append", default=[])
+    parser.add_argument("--publish", action="store_true", help="Publish the normalized record to Kafka")
     args = parser.parse_args()
 
     with args.fixture.open(encoding="utf-8") as stream:
         record = json.load(stream)
     contract = EventContract.from_file(args.schema, known_symbols=args.known_symbol)
+    if args.publish:
+        from ingestion.producers.kafka_publisher import ConfluentKafkaPublisher
+
+        accepted = MarketQuoteProducer(ConfluentKafkaPublisher.from_env(), contract).publish_record(record)
+        print(json.dumps({"accepted": accepted, "source": record.get("source", "unknown")}))
+        return 0 if accepted else 2
+
     event = build_market_quote_event(record)
     contract.validate(event)
     print(json.dumps(event, indent=2, sort_keys=True))
