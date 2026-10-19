@@ -22,6 +22,7 @@ __pycache__/
 .codex_tmp/
 deploy/k8s/secrets.yaml
 supabase/functions/.env
+supabase/.temp/
 *.py[cod]
 
 # Environment variables and secrets

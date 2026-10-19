@@ -103,6 +103,24 @@ GEMINI_API_KEY=<your-gemini-api-key>
 ALPHA_VANTAGE_API_KEY=<your-alpha-vantage-api-key>
 ```
 
+For the local Big Data path, set the following server-side values:
+
+```env
+VITE_MARKET_REFRESH_MODE=local
+INGESTION_GATEWAY_URL=http://localhost:18080
+INGESTION_GATEWAY_TOKEN=local-integration-token
+ANALYTICS_USER_SALT=<local-random-salt>
+```
+
+With `VITE_MARKET_REFRESH_MODE=local`, the frontend calls the local server
+refresh route. That route stores market prices in Supabase and publishes the
+same market events to the local ingestion gateway, which forwards them to
+Kafka. Keep the gateway token and analytics salt server-only; never prefix
+them with `VITE_`.
+
+The default mode remains the deployed Supabase Edge Function. Use that mode
+only when the Edge Function has a reachable ingestion gateway.
+
 `VITE_*` variables are available in browser code. Keep `SUPABASE_SERVICE_ROLE_KEY` and other server-only keys without the `VITE_` prefix.
 
 ### Install and run
