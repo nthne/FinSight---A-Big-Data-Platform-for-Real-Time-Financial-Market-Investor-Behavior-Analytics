@@ -15,6 +15,8 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
+        runAsUser: 100
+        runAsGroup: 101
       containers:
         - name: gateway
           image: finsight-ingestion:dev

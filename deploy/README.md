@@ -19,12 +19,15 @@ Build and publish `finsight-ingestion:dev` and `finsight-minio:course` to the re
 kubectl apply -f deploy/k8s/namespace.yaml
 kubectl apply -f deploy/k8s/ingestion-config.yaml
 kubectl apply -f deploy/k8s/secrets.yaml
+kubectl apply -f deploy/k8s/kafka.yaml
 kubectl apply -f deploy/k8s/minio.yaml
 kubectl apply -f deploy/k8s/ingestion.yaml
 kubectl apply -f deploy/k8s/ingestion-jobs.yaml
 kubectl -n finsight wait --for=condition=available deployment/minio deployment/finsight-ingestion --timeout=180s
 ```
 
-Create `deploy/k8s/secrets.yaml` locally from `secrets.example.yaml`; the real file is intentionally ignored. The shared platform owner must provide the `kafka:9092` service before the topic job and Bronze CronJob can succeed.
+Create `deploy/k8s/secrets.yaml` locally from `secrets.example.yaml`; the real file is intentionally ignored. The local profile includes the `kafka:9092` Service; a production cluster must replace it with the platform-owned replicated Kafka service before dependent jobs are promoted.
+
+`kafka.yaml` is a single-broker KRaft profile for a local Docker Desktop cluster. It is suitable for the integration smoke test only; production needs a replicated Kafka deployment, external persistence and managed credentials.
 
 The MinIO community repository was archived in 2026. This profile builds the official source tag `RELEASE.2025-10-15T17-29-55Z` for isolated coursework only. A human owner must approve the maintained S3-compatible product, licensing, backup policy and image registry before any non-course deployment.
