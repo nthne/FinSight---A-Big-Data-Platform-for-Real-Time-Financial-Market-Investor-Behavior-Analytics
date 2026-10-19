@@ -51,10 +51,14 @@ Deno.serve(async (request) => {
     const bodyMode = await readModeFromBody(request);
     const mode = bodyMode ?? url.searchParams.get("mode") ?? "all";
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    if (!supabaseUrl || !serviceRoleKey) throw new Error("Missing Supabase service environment");
+    const secretKeys = Deno.env.get("SUPABASE_SECRET_KEYS");
+    const configuredSecretKey = secretKeys
+      ? (JSON.parse(secretKeys) as Record<string, string>).default
+      : Deno.env.get("SUPABASE_SECRET_KEY");
+    const adminKey = configuredSecretKey ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!supabaseUrl || !adminKey) throw new Error("Missing Supabase secret environment");
 
-    const supabase = createClient(supabaseUrl, serviceRoleKey, {
+    const supabase = createClient(supabaseUrl, adminKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
