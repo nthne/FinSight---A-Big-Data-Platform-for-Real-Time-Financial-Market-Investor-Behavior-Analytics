@@ -1,0 +1,116 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: finsight-topic-init
+  namespace: finsight
+spec:
+  backoffLimit: 6
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: topic-init
+          image: finsight-ingestion:dev
+          command: ["python", "-m", "ingestion.kafka.create_topics"]
+          envFrom:
+            - configMapRef:
+                name: finsight-ingestion-config
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: finsight-storage-init
+  namespace: finsight
+spec:
+  backoffLimit: 6
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: storage-init
+          image: finsight-ingestion:dev
+          command: ["python", "-m", "storage.jobs.init_object_store"]
+          envFrom:
+            - configMapRef:
+                name: finsight-ingestion-config
+          env:
+            - name: MINIO_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: finsight-ingestion-secrets
+                  key: minio-access-key
+            - name: MINIO_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: finsight-ingestion-secrets
+                  key: minio-secret-key
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: finsight-bronze-landing
+  namespace: finsight
+spec:
+  schedule: "*/5 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 3
+      activeDeadlineSeconds: 240
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: bronze-landing
+              image: finsight-ingestion:dev
+              command: ["/bin/sh", "-ec"]
+              args:
+                - >-
+                  python -m storage.jobs.kafka_to_bronze
+                  --run-id "k8s-$(date -u +%Y%m%dT%H%M%SZ)-${HOSTNAME}"
+                  --max-records 10000
+                  --poll-timeout 10
+              envFrom:
+                - configMapRef:
+                    name: finsight-ingestion-config
+              env:
+                - name: MINIO_ACCESS_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: finsight-ingestion-secrets
+                      key: minio-access-key
+                - name: MINIO_SECRET_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: finsight-ingestion-secrets
+                      key: minio-secret-key
+                - name: BRONZE_CONSUMER_GROUP
+                  value: finsight-bronze-v1
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 256Mi
+                limits:
+                  cpu: "1"
+                  memory: 1Gi
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop: ["ALL"]
+                readOnlyRootFilesystem: true

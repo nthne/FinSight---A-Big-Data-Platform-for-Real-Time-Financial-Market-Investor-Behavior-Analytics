@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: finsight-ingestion
+  namespace: finsight
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: finsight-ingestion
+  template:
+    metadata:
+      labels:
+        app: finsight-ingestion
+    spec:
+      securityContext:
+        runAsNonRoot: true
+      containers:
+        - name: gateway
+          image: finsight-ingestion:dev
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: finsight-ingestion-config
+          env:
+            - name: INGESTION_GATEWAY_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: finsight-ingestion-secrets
+                  key: gateway-token
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            readOnlyRootFilesystem: true
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: finsight-ingestion
+  namespace: finsight
+spec:
+  selector:
+    app: finsight-ingestion
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http

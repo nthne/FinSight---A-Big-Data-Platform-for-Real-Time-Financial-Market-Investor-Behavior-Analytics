@@ -20,6 +20,8 @@ dist-ssr
 __pycache__/
 .pytest_cache/
 .codex_tmp/
+deploy/k8s/secrets.yaml
+supabase/functions/.env
 *.py[cod]
 
 # Environment variables and secrets
