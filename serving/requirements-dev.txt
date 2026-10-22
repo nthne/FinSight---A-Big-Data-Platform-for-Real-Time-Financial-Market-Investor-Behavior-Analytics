@@ -1,0 +1,7 @@
+# Python dependencies for the streaming/serving workstream (Person C).
+# Person D folds these into pyproject.toml / requirements.lock (Task 1).
+pyspark==4.0.4
+pymongo>=4.10,<5
+pytest>=8,<10
+# Validates fixtures against data-contracts/events.schema.json (same pin as ingestion/).
+jsonschema==4.26.0

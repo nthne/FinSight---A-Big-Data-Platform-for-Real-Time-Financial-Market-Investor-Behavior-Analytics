@@ -1,0 +1,87 @@
+# Person C overlay: speed layer + serving store on top of Person A's integration profile.
+#
+#   docker compose -f deploy/docker-compose.integration.yml -f deploy/docker-compose.streaming.yml up -d --build
+#   docker compose -f deploy/docker-compose.integration.yml -f deploy/docker-compose.streaming.yml run --rm streaming-smoke run
+#
+# `mongodb` is a local stand-in for the shared MongoDB service that the platform
+# owner deploys on Kubernetes; it exists only so the streaming path can be tested
+# end to end. Credentials below are local-only, identical to the integration profile.
+name: finsight-data-integration
+
+services:
+  mongodb:
+    image: mongo:8.0.34
+    command: ["--bind_ip_all", "--wiredTigerCacheSizeGB", "0.25"]
+    ports:
+      - "27027:27017"
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  mongo-setup:
+    build:
+      context: ..
+      dockerfile: spark/jobs/streaming/Dockerfile
+    image: finsight-streaming:dev
+    command: ["python", "-m", "serving.mongo_setup", "--uri", "mongodb://mongodb:27017", "--database", "finsight"]
+    depends_on:
+      mongodb:
+        condition: service_healthy
+
+  speed-layer:
+    image: finsight-streaming:dev
+    command: ["python", "-m", "spark.jobs.streaming.speed_layer"]
+    restart: on-failure
+    mem_limit: 2g
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      STARTING_OFFSETS: earliest
+      KNOWN_ASSET_SYMBOLS: AAPL,TSLA,MSFT,BTC,GOLD
+      MONGO_URI: mongodb://mongodb:27017
+      MONGO_DATABASE: finsight
+      RUN_ID: compose-local
+      CHECKPOINT_ROOT: s3a://fin-sight/checkpoints/speed
+      CURATED_ROOT: s3a://fin-sight/silver/speed
+      DIAGNOSTICS_ROOT: s3a://fin-sight/diagnostics
+      # storage/minio/spark-defaults.conf reads S3A credentials from these variables.
+      AWS_ACCESS_KEY_ID: finsight-local
+      AWS_SECRET_ACCESS_KEY: finsight-local-secret
+      AWS_REGION: us-east-1
+      SPARK_SHUFFLE_PARTITIONS: "4"
+      PYSPARK_SUBMIT_ARGS: "--driver-memory 1g pyspark-shell"
+    depends_on:
+      kafka:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      topic-init:
+        condition: service_completed_successfully
+      storage-init:
+        condition: service_completed_successfully
+      mongo-setup:
+        condition: service_completed_successfully
+
+  streaming-smoke:
+    profiles: ["smoke"]
+    image: finsight-streaming:dev
+    entrypoint: ["python", "-m", "serving.smoke.streaming_e2e"]
+    environment:
+      INGESTION_GATEWAY_URL: http://ingestion:8080
+      INGESTION_GATEWAY_TOKEN: local-integration-token
+      MONGO_URI: mongodb://mongodb:27017
+      MONGO_DATABASE: finsight
+      RUN_ID: compose-local
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: finsight-local
+      MINIO_SECRET_KEY: finsight-local-secret
+      MINIO_BUCKET: fin-sight
+    depends_on:
+      ingestion:
+        condition: service_healthy
+
+volumes:
+  mongo-data:
