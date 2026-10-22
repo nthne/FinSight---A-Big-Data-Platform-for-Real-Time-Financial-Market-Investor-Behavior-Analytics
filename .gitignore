@@ -44,3 +44,12 @@ supabase/.temp/
 *.njsproj
 *.sln
 *.sw?
+
+# Spark / Python tooling (streaming & serving workstream)
+.venv/
+.ruff_cache/
+spark-warehouse/
+metastore_db/
+derby.log
+# Local scratch (WSL helper scripts, logs)
+.tmp/
