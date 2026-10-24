@@ -1,8 +1,8 @@
 # Person B: Batch and Advanced Analytics Evidence
 
 **Owner:** Person B · **Status:** implementation and deterministic tests are
-authored; test execution, container-scale and cluster measurements remain
-pending.
+authored; local test results are recorded below. Container-scale and cluster
+measurements remain pending.
 
 ## Implemented
 
@@ -31,6 +31,7 @@ pending.
 ## Reproducible local checks
 
 ```powershell
+$env:FINSIGHT_TEST_SPARK_MEMORY = "2g"
 python -m pytest spark/tests/test_batch_transformations.py `
   spark/tests/test_join_strategies.py `
   spark/tests/test_advanced_analytics.py -v
@@ -43,10 +44,13 @@ Python package and Spark jar are available and
 `FINSIGHT_TEST_GRAPHFRAMES=1`; otherwise it verifies the missing Python
 dependency diagnostic or skips the cluster-dependent graph execution.
 
-In this checkout, these tests have not been executed: the configured Python
-environment lacks PySpark and pytest, the attempted PySpark download remained
-zero bytes, and no Docker daemon or `spark-submit` is available. Python syntax
-compilation and `git diff --check` pass.
+The focused suite completed with **12 passed, 1 skipped** in 267.42 seconds on
+Windows with Python 3.11.5, PySpark 4.0.4 and Java 22.0.2, using a 2 GB local
+Spark driver heap. The skipped batch Parquet-write integration test requires
+Hadoop's `winutils.exe` for local output; verify this persistence path on
+Linux/container before treating it as integration-tested. The GraphFrames
+test validates the missing optional dependency diagnostic in this environment;
+GraphFrames algorithms themselves remain unverified here.
 
 ## Measurement boundary and remaining evidence
 

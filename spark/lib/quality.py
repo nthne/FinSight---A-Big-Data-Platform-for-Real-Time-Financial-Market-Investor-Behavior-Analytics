@@ -9,6 +9,50 @@ from pyspark.sql import functions as F
 
 from spark.lib.schemas import EVENT_TYPES, PAYLOAD_SCHEMA
 
+_ENVELOPE_KEYS = (
+    "event_id",
+    "event_type",
+    "schema_version",
+    "source",
+    "event_time",
+    "ingestion_time",
+    "asset_symbol",
+    "user_id",
+    "payload",
+)
+_PAYLOAD_KEYS = {
+    "market_quote": (
+        "quote_id",
+        "open_price",
+        "high_price",
+        "low_price",
+        "close_price",
+        "volume",
+        "currency",
+        "provider_symbol",
+    ),
+    "trade_executed": (
+        "order_id",
+        "side",
+        "quantity",
+        "price",
+        "fee",
+        "total",
+        "order_kind",
+        "status",
+    ),
+    "user_action": ("action_id", "action_type", "metadata"),
+    "portfolio_snapshot": (
+        "snapshot_id",
+        "total_value",
+        "cash_balance",
+        "invested_value",
+        "pnl",
+        "risk_score",
+        "diversification_score",
+    ),
+}
+
 
 def _finite_positive(column):
     return (
@@ -69,6 +113,19 @@ def validate_and_normalize(
     )
 
     event_type = F.col("event_type")
+    known_envelope = F.array(*[F.lit(key) for key in _ENVELOPE_KEYS])
+    envelope_extra_keys = F.array_except(
+        F.expr("json_object_keys(raw_event_json)"),
+        known_envelope,
+    )
+    allowed_payload = F.lit(None).cast("array<string>")
+    for event_name, keys in _PAYLOAD_KEYS.items():
+        allowed_payload = F.when(
+            event_type == event_name,
+            F.array(*[F.lit(key) for key in keys]),
+        ).otherwise(allowed_payload)
+    payload_keys = F.expr("json_object_keys(payload_json)")
+    extra_payload_keys = F.array_except(payload_keys, allowed_payload)
     if isinstance(known_symbols, str):
         raise ValueError("known_symbols must be a sequence of symbol strings")
     raw_symbols = known_symbols or ()
@@ -105,6 +162,7 @@ def validate_and_normalize(
         | event_type.isNull()
         | (~event_type.isin(*EVENT_TYPES))
         | F.col("_payload").isNull()
+        | (F.coalesce(F.size(envelope_extra_keys), F.lit(0)) > 0)
     )
     quote_valid = (
         F.col("asset_symbol").isNotNull()
@@ -225,6 +283,7 @@ def validate_and_normalize(
         "quality_error",
         F.when(F.coalesce(required, F.lit(True)), F.lit("INVALID_ENVELOPE"))
         .when(unknown_symbol, F.lit("UNKNOWN_SYMBOL"))
+        .when(F.coalesce(F.size(extra_payload_keys), F.lit(0)) > 0, F.lit("INVALID_PAYLOAD"))
         .when(~F.coalesce(valid_payload, F.lit(False)), F.lit("INVALID_PAYLOAD")),
     )
 

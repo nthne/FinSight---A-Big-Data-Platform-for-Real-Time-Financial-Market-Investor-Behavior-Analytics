@@ -3,12 +3,47 @@ from __future__ import annotations
 import json
 from datetime import datetime
 
+from pyspark.sql.types import (
+    IntegerType,
+    LongType,
+    StringType,
+    StructField,
+    StructType,
+    TimestampType,
+)
+
 from spark.tests.events import action, at, portfolio, quote, trade, USER1, user
+
+BRONZE_SPARK_SCHEMA = StructType(
+    [
+        StructField("event_id", StringType()),
+        StructField("event_type", StringType()),
+        StructField("schema_version", StringType()),
+        StructField("source", StringType()),
+        StructField("event_time", TimestampType()),
+        StructField("ingestion_time", TimestampType()),
+        StructField("asset_symbol", StringType()),
+        StructField("user_id", StringType()),
+        StructField("payload_json", StringType()),
+        StructField("raw_event_json", StringType()),
+        StructField("bronze_ingested_at", TimestampType()),
+        StructField("pipeline_run_id", StringType()),
+        StructField("source_topic", StringType()),
+        StructField("source_partition", IntegerType()),
+        StructField("source_offset", LongType()),
+        StructField("event_date", StringType()),
+    ]
+)
 
 
 def bronze_frame(spark, events):
     rows = []
     for index, event in enumerate(events):
+        raw_event = {
+            key: value
+            for key, value in event.items()
+            if not key.startswith("_bronze_")
+        }
         rows.append(
             {
                 "event_id": event.get("event_id"),
@@ -22,7 +57,7 @@ def bronze_frame(spark, events):
                 "asset_symbol": event.get("asset_symbol"),
                 "user_id": event.get("user_id"),
                 "payload_json": json.dumps(event.get("payload", {})),
-                "raw_event_json": json.dumps(event),
+                "raw_event_json": json.dumps(raw_event),
                 "bronze_ingested_at": datetime.fromisoformat(
                     event["ingestion_time"].replace("Z", "+00:00")
                 ),
@@ -30,10 +65,10 @@ def bronze_frame(spark, events):
                 "source_topic": "fixture",
                 "source_partition": 0,
                 "source_offset": index,
-                "event_date": event["event_time"][:10],
+                "event_date": event.get("_bronze_event_date", event["event_time"][:10]),
             }
         )
-    return spark.createDataFrame(rows)
+    return spark.createDataFrame(rows, schema=BRONZE_SPARK_SCHEMA)
 
 
 def market_events():

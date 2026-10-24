@@ -57,6 +57,35 @@ def _reject_uri_credentials(path: str, label: str) -> None:
         )
 
 
+def _filter_bronze_date_range(
+    bronze: DataFrame,
+    start_date: date | None,
+    end_date: date | None,
+) -> DataFrame:
+    """Prune valid date partitions while retaining rows with bad date metadata."""
+    if start_date is None and end_date is None:
+        return bronze
+
+    partition_date = F.col("event_date")
+    event_date = F.to_date(F.col("event_time"))
+    partition_match = F.lit(True)
+    event_match = F.lit(True)
+    if start_date is not None:
+        lower = F.lit(start_date.isoformat())
+        partition_match = partition_match & (partition_date >= lower)
+        event_match = event_match & (event_date >= F.lit(start_date))
+    if end_date is not None:
+        upper = F.lit(end_date.isoformat())
+        partition_match = partition_match & (partition_date <= upper)
+        event_match = event_match & (event_date <= F.lit(end_date))
+
+    return bronze.filter(
+        partition_match
+        | event_match
+        | F.col("event_time").isNull()
+    )
+
+
 def build_market_analytics(
     silver: DataFrame,
     *,
@@ -70,6 +99,7 @@ def build_market_analytics(
     quotes = silver.filter(F.col("event_type") == "market_quote")
     ordered = Window.partitionBy("asset_symbol").orderBy("event_time", "event_id")
     rolling = ordered.rowsBetween(-(rolling_rows - 1), Window.currentRow)
+    rolling_price_stddev = F.stddev_samp("close_price").over(rolling)
     with_returns = (
         quotes.withColumn("_previous_close", F.lag("close_price").over(ordered))
         .withColumn("_previous_volume", F.lag("volume").over(ordered))
@@ -93,11 +123,14 @@ def build_market_analytics(
         )
         .withColumn("moving_average", F.avg("close_price").over(rolling))
         .withColumn("rolling_volatility", F.stddev_samp("simple_return").over(rolling))
-        .withColumn("rolling_z_score", F.expr(
-            "(close_price - moving_average) / nullif(stddev_samp(close_price) over "
-            "(partition by asset_symbol order by event_time, event_id rows between "
-            f"{rolling_rows - 1} preceding and current row), 0)"
-        ))
+        .withColumn(
+            "rolling_z_score",
+            F.when(
+                rolling_price_stddev > 0,
+                (F.col("close_price") - F.col("moving_average"))
+                / rolling_price_stddev,
+            ),
+        )
         .withColumn(
             "running_peak",
             F.max("close_price").over(ordered.rowsBetween(Window.unboundedPreceding, Window.currentRow)),
@@ -222,10 +255,7 @@ def run_batch(
 
     spark.conf.set("spark.sql.session.timeZone", "UTC")
     bronze = spark.read.parquet(bronze_path)
-    if start_date:
-        bronze = bronze.filter(F.col("event_date") >= start_date.isoformat())
-    if end_date:
-        bronze = bronze.filter(F.col("event_date") <= end_date.isoformat())
+    bronze = _filter_bronze_date_range(bronze, start_date, end_date)
 
     known_symbols = config.get("known_asset_symbols") if config else None
     if known_symbols is not None and (

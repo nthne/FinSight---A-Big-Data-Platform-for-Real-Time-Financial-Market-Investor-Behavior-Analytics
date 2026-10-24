@@ -5,11 +5,28 @@ Bronze Parquet files, validates the frozen event envelope, writes normalized
 Silver data, then produces reproducible Gold analytics. It does not replace or
 change the existing Structured Streaming jobs.
 
+## Data flow and ownership
+
+```mermaid
+flowchart LR
+  A["Person A: versioned events<br/>Kafka"] --> B["Person A: Bronze<br/>Snappy Parquet"]
+  B --> C["Person B: batch quality gate<br/>Silver + rejected"]
+  C --> D["Person B: market / portfolio<br/>Gold analytics"]
+  D --> E["Person B: MLlib segments<br/>and GraphFrames metrics"]
+  D --> F["Person C: serving collections<br/>and analytics API"]
+  E --> F
+  F --> G["Person D: React dashboard"]
+  A --> H["Person C: Structured Streaming"]
+  H --> F
+```
+
 ## Runtime
 
 - Python 3.11 and Java 21 are the recorded project runtime.
 - PySpark 4.0.4 is pinned by the existing streaming image and development
   environment.
+- Install the shared local development dependencies with
+  `python -m pip install -r serving/requirements-dev.txt`.
 - Set `PYSPARK_PYTHON` to the interpreter that has PySpark installed.
 - The batch job needs no Kafka or MongoDB connector; its input is Bronze
   Parquet. MinIO/S3A access uses the Spark S3A settings in
@@ -103,6 +120,7 @@ metastore, configured using `spark/conf/catalog.conf`.
 ## Tests
 
 ```powershell
+$env:FINSIGHT_TEST_SPARK_MEMORY = "2g"
 python -m pytest spark/tests/test_batch_transformations.py `
   spark/tests/test_join_strategies.py `
   spark/tests/test_advanced_analytics.py -v
@@ -111,8 +129,14 @@ python -m pytest spark/tests/test_batch_transformations.py `
 Run the entire Spark suite with:
 
 ```powershell
+$env:FINSIGHT_TEST_SPARK_MEMORY = "2g"
 python -m pytest spark/tests -v
 ```
+
+The 2 GB driver heap is required for this focused suite's Catalyst validation
+plans in local Spark mode. On Windows, the batch Parquet write integration
+test is skipped because Hadoop local output requires `winutils.exe`; it runs on
+Linux/macOS where the Hadoop local filesystem is supported.
 
 To execute the GraphFrames integration test, install the Python wrapper and
 start pytest with its compatible Spark package:

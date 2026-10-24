@@ -1,11 +1,17 @@
 from __future__ import annotations
 
+from datetime import date
 import math
+import platform
 
 import pytest
 from pyspark.sql import functions as F
 
-from spark.jobs.batch.market_batch import build_market_analytics, run_batch
+from spark.jobs.batch.market_batch import (
+    _filter_bronze_date_range,
+    build_market_analytics,
+    run_batch,
+)
 from spark.jobs.batch.portfolio_batch import build_portfolio_analytics
 from spark.lib.quality import validate_and_normalize
 from spark.tests.batch_fixtures import bronze_frame, market_events, portfolio_events
@@ -17,8 +23,14 @@ def test_quality_normalizes_and_rejects_duplicate_and_invalid_events(spark):
     duplicate = dict(valid)
     duplicate["ingestion_time"] = "2026-10-05T10:00:02Z"
     invalid = quote("quality-invalid", "AAPL", at(0, 5), 0.0)
+    extra_payload = quote("quality-extra", "AAPL", at(0, 6), 50.0)
+    extra_payload["payload"]["unrecognized"] = True
+    extra_envelope = quote("quality-envelope-extra", "AAPL", at(0, 7), 50.0)
+    extra_envelope["unexpected"] = True
 
-    silver, rejected = validate_and_normalize(bronze_frame(spark, [valid, duplicate, invalid]))
+    silver, rejected = validate_and_normalize(
+        bronze_frame(spark, [valid, duplicate, invalid, extra_payload, extra_envelope])
+    )
 
     assert [(row.event_id, row.asset_symbol) for row in silver.select("event_id", "asset_symbol").collect()] == [
         (valid["event_id"], "AAPL")
@@ -26,6 +38,7 @@ def test_quality_normalizes_and_rejects_duplicate_and_invalid_events(spark):
     assert {row.quality_error for row in rejected.select("quality_error").collect()} == {
         "DUPLICATE_EVENT_ID",
         "INVALID_PAYLOAD",
+        "INVALID_ENVELOPE",
     }
 
     unknown = quote("quality-unknown", "ZZZ", at(0, 10), 50.0)
@@ -33,6 +46,32 @@ def test_quality_normalizes_and_rejects_duplicate_and_invalid_events(spark):
         bronze_frame(spark, [unknown]), known_symbols=["AAPL", "MSFT"]
     )
     assert unknown_rejected.first().quality_error == "UNKNOWN_SYMBOL"
+
+
+def test_date_range_keeps_malformed_rows_for_quality_rejection(spark):
+    in_range = quote("range-in", "AAPL", at(0), 100.0)
+    in_range["_bronze_event_date"] = "2099-01-01"
+    out_of_range = quote("range-out", "AAPL", at(0), 100.0)
+    out_of_range["event_time"] = "2026-10-04T10:00:00Z"
+    out_of_range["ingestion_time"] = "2026-10-04T10:00:01Z"
+    out_of_range["_bronze_event_date"] = "2026-10-04"
+    unknown_date = quote("range-unknown", "AAPL", at(0), 100.0)
+    unknown_date["_bronze_event_date"] = None
+
+    bronze = bronze_frame(spark, [in_range, out_of_range, unknown_date])
+    selected = _filter_bronze_date_range(
+        bronze, date(2026, 10, 5), date(2026, 10, 5)
+    )
+
+    assert {row.event_id for row in selected.select("event_id").collect()} == {
+        in_range["event_id"],
+        unknown_date["event_id"],
+    }
+    _, rejected = validate_and_normalize(selected)
+    assert {row.event_id for row in rejected.select("event_id").collect()} == {
+        in_range["event_id"],
+        unknown_date["event_id"],
+    }
 
 
 def test_market_time_series_and_daily_reference_values(spark):
@@ -81,12 +120,16 @@ def test_portfolio_risk_and_behavior_concentration(spark):
     assert first_user.trade_frequency == 2
     assert first_user.turnover == 400.0
     assert first_user.concentration_hhi == 0.5
-    assert first_user.maximum_drawdown == -0.2
+    assert first_user.maximum_drawdown == pytest.approx(-0.2)
     assert first_user.action_count == 1
     assert first_user.educational_signal == "concentrated_activity"
     assert outputs["behavior_activity_daily"].count() == 5
 
 
+@pytest.mark.skipif(
+    platform.system() == "Windows",
+    reason="Hadoop local writes on Windows require winutils.exe; run this integration test on Linux",
+)
 def test_batch_run_writes_idempotent_run_outputs_and_metadata(spark, tmp_path):
     input_path = str(tmp_path / "bronze")
     output_path = str(tmp_path / "derived")

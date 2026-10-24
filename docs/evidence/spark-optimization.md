@@ -17,8 +17,16 @@ assertions are in place; workload measurements are pending.
 ## Reproduction
 
 ```powershell
+$env:FINSIGHT_TEST_SPARK_MEMORY = "2g"
 python -m pytest spark/tests/test_join_strategies.py -v
 ```
+
+The join-strategy tests (3 tests) passed as part of the focused Person B Spark
+suite, which completed with **12 passed, 1 skipped** on Windows with Python
+3.11.5, PySpark 4.0.4, Java 22.0.2 and a 2 GB local driver heap. The skipped
+batch Parquet-write integration test requires Hadoop's `winutils.exe` for
+local output. The physical-plan assertions are correctness checks, not
+evidence of workload-level performance.
 
 `benchmark_frame` records executed and formatted plans, elapsed wall-clock
 time, output rows and input-file count. It does not fabricate shuffle or
