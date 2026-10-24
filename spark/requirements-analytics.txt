@@ -1,0 +1,2 @@
+# Python wrapper for the optional GraphFrames 0.12.3 Spark 4.x package.
+graphframes-py==0.12.3

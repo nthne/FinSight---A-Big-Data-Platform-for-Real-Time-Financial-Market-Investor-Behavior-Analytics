@@ -555,7 +555,7 @@ The report must label each item as implemented, partially implemented, simulated
 
 # 10 Lessons Learned Plan
 
-The sections below are the required structure for the final report. Member A's measured evidence is linked from `docs/evidence/member-a-ingestion-storage.md` and `docs/evidence/quality-security-performance.md`; the other workstreams remain status-tracked until their owners attach equivalent measurements.
+The sections below are the required structure for the final report. Member A's measured evidence is linked from `docs/evidence/member-a-ingestion-storage.md` and `docs/evidence/quality-security-performance.md`; Person B's implementation and pending measurement boundary are recorded in `docs/evidence/advanced-analytics.md`. Other workstreams remain status-tracked until their owners attach equivalent evidence.
 
 ## Lesson 1: Reliable Multi-Source Data Ingestion
 
@@ -596,7 +596,7 @@ Member A implements typed producers, deterministic event IDs, schema validation,
 
 ### Final Solution
 
-Record baseline and optimized plans with `explain("formatted")`, Spark UI metrics, partition counts, shuffle size, runtime and peak memory. Apply only optimizations supported by the workload rather than copying configuration values blindly.
+Person B adds deterministic Bronze validation/deduplication, partition-date filtering, Silver/Gold Parquet outputs, broadcast and sort-merge join helpers, and plan/runtime recording in `spark/jobs/batch` and `spark/jobs/analytics`. The authored focused tests assert the intended physical join operators and compare market statistics with deterministic fixtures; execution remains pending because this checkout lacks PySpark and pytest. Caching is explicitly released after measurement, and bucketed tables require the persistent Hive catalog in `spark/conf/catalog.conf`. Spark UI shuffle and peak-memory results are still pending; no optimization is claimed to improve throughput until the same workload has been measured before and after. See `docs/evidence/advanced-analytics.md` and `docs/evidence/spark-optimization.md`.
 
 ### Key Takeaways
 
@@ -688,7 +688,7 @@ Use Kubernetes service names, ConfigMaps, Secrets, bounded retries with exponent
 
 ### Final Solution
 
-Record throughput, p50/p95 latency, Kafka lag, Spark batch duration, shuffle, storage I/O, MongoDB query time and API latency. Use the measurements to select caching, partition, index, resource or query changes.
+Person B's benchmark helper records wall-clock runtime, output row count, input file count and the executed physical plan, and reports shuffle bytes and peak memory as unavailable unless event-log/UI evidence supplies them. The authored deterministic Spark suite is intended to validate result correctness and join strategy; it is not a throughput benchmark. The repository's 1-million-event generation result belongs to ingestion and does not establish Spark performance. A 1-million-event Spark batch run, end-to-end p50/p95, shuffle and memory measurements remain pending, as documented in `docs/evidence/advanced-analytics.md`.
 
 ### Key Takeaways
 
@@ -734,7 +734,7 @@ Use JSON logs, correlation/run IDs, Prometheus metrics, Grafana dashboards, Spar
 
 ### Final Solution
 
-Run controlled scale experiments by changing Kafka partitions, Spark executor count and resource limits. Report throughput, latency, cost/resource use and the point at which scaling no longer helps.
+Person B provides reproducible date-range/run-ID batch inputs and a benchmark record format for comparing the same plan under different resource settings. No Spark scale experiment has been run in this worktree yet; the 1-million-event generator benchmark measures event creation only. Record throughput, latency, driver/executor resources, shuffle and cost for each Spark run before drawing a vertical- or horizontal-scaling conclusion. The remaining experiment is tracked in `docs/evidence/advanced-analytics.md`.
 
 ### Key Takeaways
 
