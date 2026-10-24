@@ -36,6 +36,7 @@ def multi_join_pipeline(
     """Join market, trade, asset and user-behavior facts with clear projections."""
     quote = quotes
     trade = trades
+    behavior_frame = behavior
     if optimized:
         quote = quote.filter(F.col("event_date").isNotNull()).select(
             "asset_symbol", "event_date", "close_price"

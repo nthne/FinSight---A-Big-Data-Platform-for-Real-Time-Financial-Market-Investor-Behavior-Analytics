@@ -12,7 +12,7 @@ from pyspark.ml.feature import StandardScaler, VectorAssembler
 from pyspark.sql import DataFrame
 from pyspark.sql import functions as F
 from pyspark.sql.functions import udf
-from pyspark.sql.types import StringType
+from pyspark.sql.types import NumericType, StringType
 
 FEATURE_COLUMNS = (
     "trade_frequency",
@@ -84,7 +84,41 @@ def train_investor_segments(
     if missing:
         raise ValueError(f"Missing segmentation features: {', '.join(missing)}")
 
-    cleaned = features.na.fill(0.0, subset=list(FEATURE_COLUMNS))
+    non_numeric = [
+        name
+        for name in FEATURE_COLUMNS
+        if not isinstance(features.schema[name].dataType, NumericType)
+    ]
+    if non_numeric:
+        raise ValueError(f"Segmentation features must be numeric: {', '.join(non_numeric)}")
+
+    invalid_feature_predicates = {}
+    for name in FEATURE_COLUMNS:
+        value = F.col(name).cast("double")
+        invalid_feature_predicates[name] = (
+            value.isNull()
+            | F.isnan(value)
+            | (F.abs(value) == F.lit(float("inf")))
+        )
+    imputation_counts = (
+        features.agg(
+            *[
+                F.coalesce(F.sum(F.when(predicate, 1).otherwise(0)), F.lit(0))
+                .cast("long")
+                .alias(name)
+                for name, predicate in invalid_feature_predicates.items()
+            ]
+        )
+        .first()
+        .asDict()
+    )
+    cleaned = features
+    for name in FEATURE_COLUMNS:
+        value = F.col(name).cast("double")
+        cleaned = cleaned.withColumn(
+            name,
+            F.when(invalid_feature_predicates[name], F.lit(0.0)).otherwise(value),
+        )
     assembler = VectorAssembler(
         inputCols=list(FEATURE_COLUMNS),
         outputCol="raw_features",
@@ -102,7 +136,7 @@ def train_investor_segments(
         withStd=True,
     )
     estimator = KMeans(k=clusters, seed=seed, featuresCol="features", predictionCol="cluster")
-    pipeline = Pipeline(stages=[scaler, estimator])
+    pipeline = Pipeline(stages=[assembler, scaler, estimator])
     model = pipeline.fit(cleaned)
     assignments = model.transform(cleaned).withColumn(
         "segment_label", F.lit("educational_segment")
@@ -126,6 +160,7 @@ def train_investor_segments(
         "seed": seed,
         "training_rows": row_count,
         "distinct_feature_vectors": distinct_count,
+        "zero_imputed_feature_values": imputation_counts,
         "silhouette": float(silhouette),
         "interpretation": (
             "Cluster numbers are arbitrary educational groupings, not diagnoses or advice."

@@ -41,16 +41,18 @@ def test_mllib_segments_record_features_scaling_and_silhouette(spark):
         (2.0, 20.0, 0.2, -0.02, 0.02, 4.0, 3.0),
         (10.0, 500.0, 0.8, -0.3, 0.2, -50.0, 20.0),
         (12.0, 700.0, 0.9, -0.4, 0.3, -80.0, 30.0),
+        (3.0, float("nan"), 0.3, -0.03, 0.03, 3.0, 4.0),
     ]
     features = spark.createDataFrame(rows, list(FEATURE_COLUMNS))
 
     result = train_investor_segments(features, max_clusters=2, seed=7)
 
-    assert result.assignments.count() == 4
+    assert result.assignments.count() == 5
     assert result.assignments.select("cluster").distinct().count() == 2
     assert result.metadata["effective_clusters"] == 2
     assert math.isfinite(result.metadata["silhouette"])
     assert result.metadata["feature_columns"] == list(FEATURE_COLUMNS)
+    assert result.metadata["zero_imputed_feature_values"]["turnover"] == 1
 
 
 def test_statistics_reference_and_spark_series_match(spark):
