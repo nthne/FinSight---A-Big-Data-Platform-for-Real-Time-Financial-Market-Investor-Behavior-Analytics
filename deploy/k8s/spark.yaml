@@ -1,0 +1,125 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: finsight-spark-ui
+  namespace: finsight
+  labels:
+    app: finsight-speed-layer
+    app.kubernetes.io/part-of: finsight
+spec:
+  selector:
+    app: finsight-speed-layer
+  ports:
+    - name: spark-ui
+      port: 4040
+      targetPort: spark-ui
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: finsight-speed-layer
+  namespace: finsight
+  labels:
+    app.kubernetes.io/part-of: finsight
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: finsight-speed-layer
+  template:
+    metadata:
+      labels:
+        app: finsight-speed-layer
+        app.kubernetes.io/part-of: finsight
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "4040"
+    spec:
+      terminationGracePeriodSeconds: 60
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        runAsGroup: 1001
+        fsGroup: 1001
+      initContainers:
+        - name: wait-for-platform
+          image: finsight-spark:0.1.0
+          imagePullPolicy: IfNotPresent
+          command: ["python", "-c"]
+          args:
+            - >-
+              import socket,time;
+              targets=[('kafka',9092),('minio',9000),('mongodb',27017)];
+              deadline=time.time()+180;
+              [(lambda: None)() for _ in []];
+              exec("for host,port in targets:\n while True:\n  try:\n   socket.create_connection((host,port),3).close(); break\n  except OSError:\n   assert time.time()<deadline, f'timeout waiting for {host}:{port}'; time.sleep(2)")
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            readOnlyRootFilesystem: true
+      containers:
+        - name: speed-layer
+          image: finsight-spark:0.1.0
+          imagePullPolicy: IfNotPresent
+          command: ["python", "-m", "spark.jobs.streaming.speed_layer"]
+          envFrom:
+            - configMapRef:
+                name: finsight-platform-config
+          env:
+            - name: MONGO_URI
+              valueFrom:
+                secretKeyRef:
+                  name: finsight-platform-secrets
+                  key: mongodb-writer-uri
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: finsight-platform-secrets
+                  key: minio-access-key
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: finsight-platform-secrets
+                  key: minio-secret-key
+          ports:
+            - name: spark-ui
+              containerPort: 4040
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -ec
+                - kill -0 1
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -ec
+                - kill -0 1
+            initialDelaySeconds: 60
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1536Mi
+            limits:
+              cpu: "2"
+              memory: 2304Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            readOnlyRootFilesystem: false
+

@@ -9,6 +9,10 @@ import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
 // @cloudflare/vite-plugin builds from this — wrangler.jsonc main alone is insufficient.
 export default defineConfig({
+  // Local/container builds target a real Node server so the MongoDB driver can
+  // use TCP. Lovable-hosted builds still force the Cloudflare preset inside the
+  // wrapper, preserving the existing hosted deployment path.
+  nitro: { preset: "node-server" },
   vite: {
     server: {
       host: "127.0.0.1",

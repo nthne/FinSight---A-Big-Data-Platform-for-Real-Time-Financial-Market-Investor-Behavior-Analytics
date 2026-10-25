@@ -1,0 +1,145 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: finsight-mongo-users
+  namespace: finsight
+  labels:
+    app.kubernetes.io/part-of: finsight
+spec:
+  backoffLimit: 8
+  ttlSecondsAfterFinished: 86400
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: create-users
+          image: mongo:8.0.34
+          command: ["/bin/sh", "-ec"]
+          args:
+            - >-
+              mongosh "$MONGO_ADMIN_URI" --quiet --eval '
+              const target = db.getSiblingDB(process.env.MONGO_DATABASE);
+              const ensure = (name, password, roles) => target.getUser(name)
+                ? target.updateUser(name, {pwd: password, roles})
+                : target.createUser({user: name, pwd: password, roles});
+              ensure(process.env.MONGO_WRITER_USERNAME, process.env.MONGO_WRITER_PASSWORD,
+                [{role: "readWrite", db: process.env.MONGO_DATABASE}]);
+              ensure(process.env.MONGO_READER_USERNAME, process.env.MONGO_READER_PASSWORD,
+                [{role: "read", db: process.env.MONGO_DATABASE}]);'
+          envFrom:
+            - configMapRef:
+                name: finsight-platform-config
+          env:
+            - name: MONGO_ADMIN_URI
+              valueFrom:
+                secretKeyRef:
+                  name: finsight-platform-secrets
+                  key: mongodb-admin-uri
+            - name: MONGO_WRITER_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: finsight-platform-secrets
+                  key: mongodb-writer-username
+            - name: MONGO_WRITER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: finsight-platform-secrets
+                  key: mongodb-writer-password
+            - name: MONGO_READER_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: finsight-platform-secrets
+                  key: mongodb-reader-username
+            - name: MONGO_READER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: finsight-platform-secrets
+                  key: mongodb-reader-password
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: finsight-mongo-setup
+  namespace: finsight
+  labels:
+    app.kubernetes.io/part-of: finsight
+spec:
+  backoffLimit: 8
+  ttlSecondsAfterFinished: 86400
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: setup
+          image: finsight-spark:0.1.0
+          imagePullPolicy: IfNotPresent
+          command: ["python", "-m", "serving.mongo_setup"]
+          envFrom:
+            - configMapRef:
+                name: finsight-platform-config
+          env:
+            - name: MONGO_URI
+              valueFrom:
+                secretKeyRef:
+                  name: finsight-platform-secrets
+                  key: mongodb-admin-uri
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 300m
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            readOnlyRootFilesystem: true
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: finsight-runtime-smoke
+  namespace: finsight
+  labels:
+    app.kubernetes.io/part-of: finsight
+spec:
+  backoffLimit: 2
+  ttlSecondsAfterFinished: 86400
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: smoke
+          image: finsight-spark:0.1.0
+          imagePullPolicy: IfNotPresent
+          command: ["python", "-c"]
+          args:
+            - >-
+              import pymongo,pyspark,pyarrow;
+              from graphframes import GraphFrame;
+              print({'pyspark':pyspark.__version__,'pymongo':pymongo.version,'pyarrow':pyarrow.__version__,'graphframes':GraphFrame.__module__})
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 300m
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            readOnlyRootFilesystem: true
+

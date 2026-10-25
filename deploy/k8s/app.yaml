@@ -1,0 +1,115 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: finsight-app
+  namespace: finsight
+  labels:
+    app: finsight-app
+    app.kubernetes.io/part-of: finsight
+spec:
+  selector:
+    app: finsight-app
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: finsight-app
+  namespace: finsight
+  labels:
+    app.kubernetes.io/part-of: finsight
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: finsight-app
+  template:
+    metadata:
+      labels:
+        app: finsight-app
+        app.kubernetes.io/part-of: finsight
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: /api/metrics
+        prometheus.io/port: "3000"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        runAsGroup: 1001
+      containers:
+        - name: app
+          image: finsight-app:0.1.0
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: finsight-platform-config
+          env:
+            - name: MONGO_URI
+              valueFrom:
+                secretKeyRef:
+                  name: finsight-platform-secrets
+                  key: mongodb-reader-uri
+            - name: ANALYTICS_USER_SALT
+              valueFrom:
+                secretKeyRef:
+                  name: finsight-platform-secrets
+                  key: analytics-user-salt
+            - name: INGESTION_GATEWAY_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: finsight-platform-secrets
+                  key: gateway-token
+            - name: SUPABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: finsight-platform-secrets
+                  key: supabase-url
+            - name: SUPABASE_PUBLISHABLE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: finsight-platform-secrets
+                  key: supabase-publishable-key
+            - name: SUPABASE_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: finsight-platform-secrets
+                  key: supabase-secret-key
+          ports:
+            - name: http
+              containerPort: 3000
+          startupProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            failureThreshold: 30
+            periodSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 100m
+              memory: 192Mi
+            limits:
+              cpu: 750m
+              memory: 768Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            readOnlyRootFilesystem: true
+            seccompProfile:
+              type: RuntimeDefault
+

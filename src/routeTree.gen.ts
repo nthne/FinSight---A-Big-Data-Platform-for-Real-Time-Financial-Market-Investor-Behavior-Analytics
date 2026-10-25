@@ -9,54 +9,27 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as TradingRouteImport } from './routes/trading'
-import { Route as SettingsRouteImport } from './routes/settings'
-import { Route as PortfolioRouteImport } from './routes/portfolio'
-import { Route as GamificationRouteImport } from './routes/gamification'
-import { Route as DocsRouteImport } from './routes/docs'
-import { Route as BehavioralRouteImport } from './routes/behavioral'
-import { Route as AuthRouteImport } from './routes/auth'
-import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AssetSymbolRouteImport } from './routes/asset.$symbol'
-import { Route as ApiInsightRouteImport } from './routes/api/insight'
+import { Route as AdminRouteImport } from './routes/admin'
+import { Route as AnalyticsRouteImport } from './routes/analytics'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as BehavioralRouteImport } from './routes/behavioral'
+import { Route as DocsRouteImport } from './routes/docs'
+import { Route as GamificationRouteImport } from './routes/gamification'
+import { Route as PortfolioRouteImport } from './routes/portfolio'
+import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as TradingRouteImport } from './routes/trading'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
-import { Route as ApiMarketRefreshRouteImport } from './routes/api/market/refresh'
+import { Route as ApiHealthRouteImport } from './routes/api/health'
+import { Route as ApiInsightRouteImport } from './routes/api/insight'
+import { Route as ApiMetricsRouteImport } from './routes/api/metrics'
+import { Route as AssetSymbolRouteImport } from './routes/asset.$symbol'
 import { Route as ApiAnalyticsSplatRouteImport } from './routes/api/analytics.$'
+import { Route as ApiMarketRefreshRouteImport } from './routes/api/market/refresh'
 
-const TradingRoute = TradingRouteImport.update({
-  id: '/trading',
-  path: '/trading',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SettingsRoute = SettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PortfolioRoute = PortfolioRouteImport.update({
-  id: '/portfolio',
-  path: '/portfolio',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const GamificationRoute = GamificationRouteImport.update({
-  id: '/gamification',
-  path: '/gamification',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DocsRoute = DocsRouteImport.update({
-  id: '/docs',
-  path: '/docs',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const BehavioralRoute = BehavioralRouteImport.update({
-  id: '/behavioral',
-  path: '/behavioral',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRoute = AdminRouteImport.update({
@@ -64,19 +37,44 @@ const AdminRoute = AdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const AnalyticsRoute = AnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AssetSymbolRoute = AssetSymbolRouteImport.update({
-  id: '/asset/$symbol',
-  path: '/asset/$symbol',
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiInsightRoute = ApiInsightRouteImport.update({
-  id: '/api/insight',
-  path: '/api/insight',
+const BehavioralRoute = BehavioralRouteImport.update({
+  id: '/behavioral',
+  path: '/behavioral',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DocsRoute = DocsRouteImport.update({
+  id: '/docs',
+  path: '/docs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GamificationRoute = GamificationRouteImport.update({
+  id: '/gamification',
+  path: '/gamification',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PortfolioRoute = PortfolioRouteImport.update({
+  id: '/portfolio',
+  path: '/portfolio',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TradingRoute = TradingRouteImport.update({
+  id: '/trading',
+  path: '/trading',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiChatRoute = ApiChatRouteImport.update({
@@ -84,9 +82,24 @@ const ApiChatRoute = ApiChatRouteImport.update({
   path: '/api/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiMarketRefreshRoute = ApiMarketRefreshRouteImport.update({
-  id: '/api/market/refresh',
-  path: '/api/market/refresh',
+const ApiHealthRoute = ApiHealthRouteImport.update({
+  id: '/api/health',
+  path: '/api/health',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiInsightRoute = ApiInsightRouteImport.update({
+  id: '/api/insight',
+  path: '/api/insight',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiMetricsRoute = ApiMetricsRouteImport.update({
+  id: '/api/metrics',
+  path: '/api/metrics',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AssetSymbolRoute = AssetSymbolRouteImport.update({
+  id: '/asset/$symbol',
+  path: '/asset/$symbol',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAnalyticsSplatRoute = ApiAnalyticsSplatRouteImport.update({
@@ -94,10 +107,16 @@ const ApiAnalyticsSplatRoute = ApiAnalyticsSplatRouteImport.update({
   path: '/api/analytics/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiMarketRefreshRoute = ApiMarketRefreshRouteImport.update({
+  id: '/api/market/refresh',
+  path: '/api/market/refresh',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/analytics': typeof AnalyticsRoute
   '/auth': typeof AuthRoute
   '/behavioral': typeof BehavioralRoute
   '/docs': typeof DocsRoute
@@ -106,7 +125,9 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRoute
   '/trading': typeof TradingRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/health': typeof ApiHealthRoute
   '/api/insight': typeof ApiInsightRoute
+  '/api/metrics': typeof ApiMetricsRoute
   '/asset/$symbol': typeof AssetSymbolRoute
   '/api/analytics/$': typeof ApiAnalyticsSplatRoute
   '/api/market/refresh': typeof ApiMarketRefreshRoute
@@ -114,6 +135,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/analytics': typeof AnalyticsRoute
   '/auth': typeof AuthRoute
   '/behavioral': typeof BehavioralRoute
   '/docs': typeof DocsRoute
@@ -122,7 +144,9 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRoute
   '/trading': typeof TradingRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/health': typeof ApiHealthRoute
   '/api/insight': typeof ApiInsightRoute
+  '/api/metrics': typeof ApiMetricsRoute
   '/asset/$symbol': typeof AssetSymbolRoute
   '/api/analytics/$': typeof ApiAnalyticsSplatRoute
   '/api/market/refresh': typeof ApiMarketRefreshRoute
@@ -131,6 +155,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/analytics': typeof AnalyticsRoute
   '/auth': typeof AuthRoute
   '/behavioral': typeof BehavioralRoute
   '/docs': typeof DocsRoute
@@ -139,7 +164,9 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRoute
   '/trading': typeof TradingRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/health': typeof ApiHealthRoute
   '/api/insight': typeof ApiInsightRoute
+  '/api/metrics': typeof ApiMetricsRoute
   '/asset/$symbol': typeof AssetSymbolRoute
   '/api/analytics/$': typeof ApiAnalyticsSplatRoute
   '/api/market/refresh': typeof ApiMarketRefreshRoute
@@ -149,6 +176,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/analytics'
     | '/auth'
     | '/behavioral'
     | '/docs'
@@ -157,7 +185,9 @@ export interface FileRouteTypes {
     | '/settings'
     | '/trading'
     | '/api/chat'
+    | '/api/health'
     | '/api/insight'
+    | '/api/metrics'
     | '/asset/$symbol'
     | '/api/analytics/$'
     | '/api/market/refresh'
@@ -165,6 +195,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/admin'
+    | '/analytics'
     | '/auth'
     | '/behavioral'
     | '/docs'
@@ -173,7 +204,9 @@ export interface FileRouteTypes {
     | '/settings'
     | '/trading'
     | '/api/chat'
+    | '/api/health'
     | '/api/insight'
+    | '/api/metrics'
     | '/asset/$symbol'
     | '/api/analytics/$'
     | '/api/market/refresh'
@@ -181,6 +214,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/admin'
+    | '/analytics'
     | '/auth'
     | '/behavioral'
     | '/docs'
@@ -189,7 +223,9 @@ export interface FileRouteTypes {
     | '/settings'
     | '/trading'
     | '/api/chat'
+    | '/api/health'
     | '/api/insight'
+    | '/api/metrics'
     | '/asset/$symbol'
     | '/api/analytics/$'
     | '/api/market/refresh'
@@ -198,6 +234,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
+  AnalyticsRoute: typeof AnalyticsRoute
   AuthRoute: typeof AuthRoute
   BehavioralRoute: typeof BehavioralRoute
   DocsRoute: typeof DocsRoute
@@ -206,7 +243,9 @@ export interface RootRouteChildren {
   SettingsRoute: typeof SettingsRoute
   TradingRoute: typeof TradingRoute
   ApiChatRoute: typeof ApiChatRoute
+  ApiHealthRoute: typeof ApiHealthRoute
   ApiInsightRoute: typeof ApiInsightRoute
+  ApiMetricsRoute: typeof ApiMetricsRoute
   AssetSymbolRoute: typeof AssetSymbolRoute
   ApiAnalyticsSplatRoute: typeof ApiAnalyticsSplatRoute
   ApiMarketRefreshRoute: typeof ApiMarketRefreshRoute
@@ -214,53 +253,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/trading': {
-      id: '/trading'
-      path: '/trading'
-      fullPath: '/trading'
-      preLoaderRoute: typeof TradingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/settings': {
-      id: '/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof SettingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/portfolio': {
-      id: '/portfolio'
-      path: '/portfolio'
-      fullPath: '/portfolio'
-      preLoaderRoute: typeof PortfolioRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/gamification': {
-      id: '/gamification'
-      path: '/gamification'
-      fullPath: '/gamification'
-      preLoaderRoute: typeof GamificationRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/docs': {
-      id: '/docs'
-      path: '/docs'
-      fullPath: '/docs'
-      preLoaderRoute: typeof DocsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/behavioral': {
-      id: '/behavioral'
-      path: '/behavioral'
-      fullPath: '/behavioral'
-      preLoaderRoute: typeof BehavioralRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin': {
@@ -270,25 +267,60 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/analytics': {
+      id: '/analytics'
+      path: '/analytics'
+      fullPath: '/analytics'
+      preLoaderRoute: typeof AnalyticsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/asset/$symbol': {
-      id: '/asset/$symbol'
-      path: '/asset/$symbol'
-      fullPath: '/asset/$symbol'
-      preLoaderRoute: typeof AssetSymbolRouteImport
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/insight': {
-      id: '/api/insight'
-      path: '/api/insight'
-      fullPath: '/api/insight'
-      preLoaderRoute: typeof ApiInsightRouteImport
+    '/behavioral': {
+      id: '/behavioral'
+      path: '/behavioral'
+      fullPath: '/behavioral'
+      preLoaderRoute: typeof BehavioralRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/docs': {
+      id: '/docs'
+      path: '/docs'
+      fullPath: '/docs'
+      preLoaderRoute: typeof DocsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/gamification': {
+      id: '/gamification'
+      path: '/gamification'
+      fullPath: '/gamification'
+      preLoaderRoute: typeof GamificationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/portfolio': {
+      id: '/portfolio'
+      path: '/portfolio'
+      fullPath: '/portfolio'
+      preLoaderRoute: typeof PortfolioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/trading': {
+      id: '/trading'
+      path: '/trading'
+      fullPath: '/trading'
+      preLoaderRoute: typeof TradingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/chat': {
@@ -298,11 +330,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiChatRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/market/refresh': {
-      id: '/api/market/refresh'
-      path: '/api/market/refresh'
-      fullPath: '/api/market/refresh'
-      preLoaderRoute: typeof ApiMarketRefreshRouteImport
+    '/api/health': {
+      id: '/api/health'
+      path: '/api/health'
+      fullPath: '/api/health'
+      preLoaderRoute: typeof ApiHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/insight': {
+      id: '/api/insight'
+      path: '/api/insight'
+      fullPath: '/api/insight'
+      preLoaderRoute: typeof ApiInsightRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/metrics': {
+      id: '/api/metrics'
+      path: '/api/metrics'
+      fullPath: '/api/metrics'
+      preLoaderRoute: typeof ApiMetricsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/asset/$symbol': {
+      id: '/asset/$symbol'
+      path: '/asset/$symbol'
+      fullPath: '/asset/$symbol'
+      preLoaderRoute: typeof AssetSymbolRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/analytics/$': {
@@ -312,12 +365,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAnalyticsSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/market/refresh': {
+      id: '/api/market/refresh'
+      path: '/api/market/refresh'
+      fullPath: '/api/market/refresh'
+      preLoaderRoute: typeof ApiMarketRefreshRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
+  AnalyticsRoute: AnalyticsRoute,
   AuthRoute: AuthRoute,
   BehavioralRoute: BehavioralRoute,
   DocsRoute: DocsRoute,
@@ -326,7 +387,9 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRoute: SettingsRoute,
   TradingRoute: TradingRoute,
   ApiChatRoute: ApiChatRoute,
+  ApiHealthRoute: ApiHealthRoute,
   ApiInsightRoute: ApiInsightRoute,
+  ApiMetricsRoute: ApiMetricsRoute,
   AssetSymbolRoute: AssetSymbolRoute,
   ApiAnalyticsSplatRoute: ApiAnalyticsSplatRoute,
   ApiMarketRefreshRoute: ApiMarketRefreshRoute,

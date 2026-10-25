@@ -1,0 +1,13 @@
+.git
+.codex_tmp
+.env
+.env.*
+.output
+dist
+node_modules
+__pycache__
+.pytest_cache
+.venv
+docs
+tests
+
