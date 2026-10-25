@@ -1,0 +1,4 @@
+{
+  "market_rolling_rows": 5,
+  "known_asset_symbols": ["AAPL", "TSLA", "MSFT", "BTC", "GOLD"]
+}
