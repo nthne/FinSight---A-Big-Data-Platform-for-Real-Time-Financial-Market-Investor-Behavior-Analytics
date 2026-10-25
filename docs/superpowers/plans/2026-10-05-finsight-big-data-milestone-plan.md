@@ -95,9 +95,13 @@ The team should finish and submit as soon as all Week 5 criteria pass; Week 6 is
 
   Pin Java, Python, Node.js, Spark, Kafka, Hadoop AWS/S3A, MongoDB Spark Connector and GraphFrames versions. Run minimal import/connectivity checks before developing jobs; record exact image tags and package coordinates.
 
+  Person D froze the exact coordinates in `docs/architecture/version-matrix.md`; Spark/Kafka/S3A/Mongo runtime evidence from Person C is linked there. The shared GraphFrames/Mongo connector image-import smoke remains open because Docker is unavailable on the current machine.
+
 - [ ] **Step 2: Create the image and dependency baseline**
 
   Add reproducible Python dependencies and component Dockerfiles. Build at least the Spark and application images, and record image names/digests used by Kubernetes.
+
+  Dependency files and both shared Dockerfiles are implemented. The host Node production build passes, but Docker images and immutable digests remain open pending a Docker daemon.
 
 - [x] **Step 3: Inventory existing fields and freeze the contract**
 
@@ -181,7 +185,7 @@ The team should finish and submit as soon as all Week 5 criteria pass; Week 6 is
 
   Define `fin-sight/bronze`, `fin-sight/silver` and `fin-sight/gold` prefixes. Document retention, compaction and naming rules.
 
-- [ ] **Step 2: Configure and verify the S3A boundary**
+- [x] **Step 2: Configure and verify the S3A boundary**
 
   Configure the matching Hadoop AWS/S3A connector, endpoint, path-style access and credential injection for MinIO. Keep credentials in Kubernetes Secrets and prove Spark can read and write a test object.
 
@@ -455,9 +459,11 @@ The team should finish and submit as soon as all Week 5 criteria pass; Week 6 is
 
   Enforce user ownership for user-level views and expose stale-data state when the freshness threshold is exceeded.
 
-- [ ] **Step 3: Integrate the dashboard**
+- [x] **Step 3: Integrate the dashboard**
 
   Preserve existing loading, empty and error states. Add labels that distinguish educational analytics from financial advice.
+
+  Person D added the authenticated `/analytics` route with current/freshness, time-series, volatility, Lambda provenance, portfolio-risk, educational behavior and administrator pipeline-health views. The production build passes; a live cluster screenshot remains a final evidence gate.
 
 - [ ] **Step 4: Test the API path**
 
@@ -497,7 +503,7 @@ The team should finish and submit as soon as all Week 5 criteria pass; Week 6 is
 
   Define the namespace plus Kafka, MinIO and MongoDB services with persistent volume claims, readiness checks and resource requests/limits. Prove service discovery before dependent workload manifests are complete.
 
-  Member A's local Kubernetes slice is now deployed and evidenced for Kafka and MinIO. This overall step remains open because MongoDB and the shared platform baseline are not present in this repository.
+  The MongoDB and shared platform manifests are now present and pass static invariant tests. Member A's local Kubernetes slice is evidenced for Kafka and MinIO; the overall step remains open because the expanded profile has not been applied on a configured cluster.
 
 - [x] **Step 2: Add owner-maintained workload manifests**
 
@@ -513,13 +519,13 @@ The team should finish and submit as soon as all Week 5 criteria pass; Week 6 is
 
   Expected: all required workloads reach the documented ready state and communicate through Kubernetes service names.
 
-  Member A verified the local Kafka, MinIO, ingestion, topic-init, storage-init and Bronze workloads on Docker Desktop; the overall step remains open for the missing member-owned workloads.
+  Member A verified the local Kafka, MinIO, ingestion, topic-init, storage-init and Bronze workloads on Docker Desktop. The expanded MongoDB, Spark speed layer, app and monitoring workloads remain open because the current machine has no cluster context; Person B batch/analytics workloads are still absent.
 
 - [ ] **Step 5: Test restart behavior**
 
   Delete one producer pod and one streaming pod. Expected: Kubernetes restarts them and the pipeline resumes without duplicate serving results beyond the documented retry window.
 
-  Member A verified gateway rollout and Kafka PVC topic persistence. Producer and streaming pods are not available in this repository, so their restart test remains a human/team follow-up.
+  Member A verified gateway rollout and Kafka PVC topic persistence. Producer and streaming manifests plus an opt-in bounded restart harness now exist, but the Kubernetes restart/reconciliation measurement remains open pending a cluster.
 
 - [x] **Step 6: Commit**
 
@@ -548,6 +554,8 @@ The team should finish and submit as soon as all Week 5 criteria pass; Week 6 is
 - [ ] **Step 1: Expose pipeline metrics**
 
   Person A exposes Kafka/source/storage quality metrics, Person B exposes Spark batch/analytics metrics, Person C exposes streaming/Mongo/API metrics and Person D exposes Kubernetes/application metrics. Record Kafka lag, rates, Spark batch duration, watermark, state rows, late events, rejected events, MongoDB latency, API errors and resource use.
+
+  Person D's application/Kubernetes metrics and Person C's persisted stream metrics are connected to the shared dashboard. The step remains open because Person B's batch/analytics metrics and live cluster resource series are absent.
 
 - [x] **Step 2: Create dashboards and alerts**
 
@@ -587,7 +595,7 @@ The team should finish and submit as soon as all Week 5 criteria pass; Week 6 is
 - Consumes: Implementation, test, monitoring and deployment evidence from Tasks 1–11.
 - Produces: Final report, traceability matrix, demonstration runbook, measured lessons learned and explicit limitations.
 
-- [ ] **Step 1: Update implementation status**
+- [x] **Step 1: Update implementation status**
 
   Mark each component implemented, partial, simulated, measured or deferred. Remove planning language only where evidence exists.
 
@@ -595,7 +603,7 @@ The team should finish and submit as soon as all Week 5 criteria pass; Week 6 is
 
   Use Problem Description, Approaches Tried, Final Solution and Key Takeaways. Person A drafts Lessons 1, 4, 9 and 10; Person B drafts Lessons 2, 6 and 8; Person C drafts Lessons 3, 5 and 11; Person D drafts Lesson 7 and edits the complete report. Include actual metrics, conditions and trade-offs.
 
-- [ ] **Step 3: Assemble traceability**
+- [x] **Step 3: Assemble traceability**
 
   Map every course requirement to source file/job, test, deployment artifact and report section.
 
@@ -605,7 +613,9 @@ The team should finish and submit as soon as all Week 5 criteria pass; Week 6 is
 
   Expected: record exit codes, test counts, known exceptions and environment details in the report.
 
-- [x] **Step 5: Write the Member A local demonstration runbook**
+  Person D recorded the production build, scoped lint, 45-pass/7-skip non-Spark suite, Node tests and platform invariant results. This step remains open because full-repository lint has pre-existing failures, Spark image imports were not run, and no Kubernetes smoke target is available.
+
+- [x] **Step 5: Write the integrated demonstration runbook**
 
   Follow `docs/demo/runbook.md` from a clean environment and record any step that depends on undocumented manual state. Person A demonstrates ingestion/storage, Person B demonstrates Spark plans/analytics, Person C demonstrates streaming/recovery/API and Person D demonstrates Kubernetes/monitoring/dashboard.
 

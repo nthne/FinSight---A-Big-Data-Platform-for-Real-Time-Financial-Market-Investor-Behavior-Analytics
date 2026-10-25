@@ -7,6 +7,7 @@
 import type { Db, Document } from "mongodb";
 
 import { pseudonymizeUserId } from "../../ingestion/producers/app_event_producer";
+import { observeAnalyticsRequest } from "./app-metrics.server";
 
 export const DISCLAIMER = "Educational analytics on simulated trading. Not investment advice.";
 
@@ -519,6 +520,8 @@ export async function handleAnalyticsRequest(
   const path = new URL(request.url).pathname
     .replace(/^\/api\/analytics\/?/, "")
     .replace(/\/+$/, "");
+  const startedAt = performance.now();
+  let status = 500;
   try {
     // Authenticate before resolving the route so anonymous callers learn nothing.
     const viewer = await deps.authenticate(request);
@@ -549,7 +552,8 @@ export async function handleAnalyticsRequest(
       },
     };
     const result = await route.handler(ctx);
-    return json(200, {
+    status = 200;
+    return json(status, {
       data: result.data,
       meta: {
         generated_at: now.toISOString(),
@@ -559,13 +563,18 @@ export async function handleAnalyticsRequest(
       },
     });
   } catch (error) {
-    if (error instanceof ApiError) return errorResponse(error);
+    if (error instanceof ApiError) {
+      status = error.status;
+      return errorResponse(error);
+    }
     console.error("analytics: request failed", error);
     const mongo = error instanceof Error && error.name.startsWith("Mongo");
-    return errorResponse(
-      mongo
-        ? new ApiError(503, "SERVING_UNAVAILABLE", "The analytics store is unavailable")
-        : new ApiError(500, "INTERNAL", "Unexpected error"),
-    );
+    const apiError = mongo
+      ? new ApiError(503, "SERVING_UNAVAILABLE", "The analytics store is unavailable")
+      : new ApiError(500, "INTERNAL", "Unexpected error");
+    status = apiError.status;
+    return errorResponse(apiError);
+  } finally {
+    observeAnalyticsRequest(path, status, performance.now() - startedAt);
   }
 }

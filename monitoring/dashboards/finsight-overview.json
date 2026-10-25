@@ -1,49 +1,148 @@
 {
-  "title": "FinSight Ingestion and Bronze",
+  "title": "FinSight Platform Overview",
+  "uid": "finsight-overview",
   "schemaVersion": 39,
-  "version": 1,
-  "refresh": "30s",
+  "version": 2,
+  "refresh": "15s",
+  "tags": ["finsight", "lambda-architecture"],
   "time": {"from": "now-6h", "to": "now"},
   "panels": [
     {
       "id": 1,
       "type": "timeseries",
-      "title": "Accepted events by type",
+      "title": "Accepted event rate by type",
       "datasource": {"type": "prometheus", "uid": "PROMETHEUS"},
       "targets": [{"expr": "sum by (event_type) (rate(finsight_ingestion_accepted_total[5m]))", "legendFormat": "{{event_type}}"}],
-      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 0}
     },
     {
       "id": 2,
       "type": "timeseries",
-      "title": "Rejected events by rule",
+      "title": "Kafka consumer lag",
       "datasource": {"type": "prometheus", "uid": "PROMETHEUS"},
-      "targets": [{"expr": "sum by (error_code) (rate(finsight_ingestion_rejected_total[5m]))", "legendFormat": "{{error_code}}"}],
-      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+      "targets": [{"expr": "sum by (consumergroup, topic) (kafka_consumergroup_lag)", "legendFormat": "{{consumergroup}} · {{topic}}"}],
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 0}
     },
     {
       "id": 3,
-      "type": "stat",
-      "title": "Kafka publish failures",
+      "type": "timeseries",
+      "title": "Spark input vs processing rate",
       "datasource": {"type": "prometheus", "uid": "PROMETHEUS"},
-      "targets": [{"expr": "sum(increase(finsight_ingestion_publish_failures_total[1h]))"}],
-      "gridPos": {"h": 5, "w": 8, "x": 0, "y": 8}
+      "targets": [
+        {"expr": "finsight_stream_input_rows_per_second", "legendFormat": "input · {{query}}"},
+        {"expr": "finsight_stream_processed_rows_per_second", "legendFormat": "processed · {{query}}"}
+      ],
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 0}
     },
     {
       "id": 4,
-      "type": "stat",
-      "title": "Market event age seconds",
+      "type": "timeseries",
+      "title": "Spark micro-batch duration",
       "datasource": {"type": "prometheus", "uid": "PROMETHEUS"},
-      "targets": [{"expr": "time() - max(finsight_market_event_timestamp_seconds)", "unit": "s"}],
-      "gridPos": {"h": 5, "w": 8, "x": 8, "y": 8}
+      "fieldConfig": {"defaults": {"unit": "s"}},
+      "targets": [{"expr": "finsight_stream_batch_duration_seconds", "legendFormat": "{{query}}"}],
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 8}
     },
     {
       "id": 5,
-      "type": "table",
-      "title": "Bronze quality counters",
+      "type": "timeseries",
+      "title": "State rows by query",
       "datasource": {"type": "prometheus", "uid": "PROMETHEUS"},
-      "targets": [{"expr": "sum by (source, rule) (finsight_bronze_quality_records_total)", "format": "table"}],
+      "targets": [{"expr": "finsight_stream_state_rows", "legendFormat": "{{query}}"}],
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 8}
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Watermark delay",
+      "datasource": {"type": "prometheus", "uid": "PROMETHEUS"},
+      "fieldConfig": {"defaults": {"unit": "s"}},
+      "targets": [{"expr": "time() - finsight_stream_watermark_timestamp_seconds", "legendFormat": "{{query}}"}],
       "gridPos": {"h": 8, "w": 8, "x": 16, "y": 8}
+    },
+    {
+      "id": 7,
+      "type": "stat",
+      "title": "Too-late events · 24h",
+      "datasource": {"type": "prometheus", "uid": "PROMETHEUS"},
+      "targets": [{"expr": "finsight_gate_too_late_events_24h"}],
+      "gridPos": {"h": 5, "w": 4, "x": 0, "y": 16}
+    },
+    {
+      "id": 8,
+      "type": "stat",
+      "title": "Invalid stream events · 24h",
+      "datasource": {"type": "prometheus", "uid": "PROMETHEUS"},
+      "targets": [{"expr": "finsight_gate_invalid_events_24h"}],
+      "gridPos": {"h": 5, "w": 4, "x": 4, "y": 16}
+    },
+    {
+      "id": 9,
+      "type": "stat",
+      "title": "MongoDB ping latency",
+      "datasource": {"type": "prometheus", "uid": "PROMETHEUS"},
+      "fieldConfig": {"defaults": {"unit": "s"}},
+      "targets": [{"expr": "finsight_mongodb_ping_duration_seconds"}],
+      "gridPos": {"h": 5, "w": 4, "x": 8, "y": 16}
+    },
+    {
+      "id": 10,
+      "type": "stat",
+      "title": "Analytics API 5xx · 15m",
+      "datasource": {"type": "prometheus", "uid": "PROMETHEUS"},
+      "targets": [{"expr": "sum(increase(finsight_analytics_api_errors_total[15m])) or vector(0)"}],
+      "gridPos": {"h": 5, "w": 4, "x": 12, "y": 16}
+    },
+    {
+      "id": 11,
+      "type": "stat",
+      "title": "Market data age",
+      "datasource": {"type": "prometheus", "uid": "PROMETHEUS"},
+      "fieldConfig": {"defaults": {"unit": "s"}},
+      "targets": [{"expr": "time() - max(finsight_market_event_timestamp_seconds)"}],
+      "gridPos": {"h": 5, "w": 4, "x": 16, "y": 16}
+    },
+    {
+      "id": 12,
+      "type": "stat",
+      "title": "Unavailable FinSight replicas",
+      "datasource": {"type": "prometheus", "uid": "PROMETHEUS"},
+      "targets": [{"expr": "sum(kube_deployment_status_replicas_unavailable{namespace=\"finsight\"}) or vector(0)"}],
+      "gridPos": {"h": 5, "w": 4, "x": 20, "y": 16}
+    },
+    {
+      "id": 13,
+      "type": "timeseries",
+      "title": "Analytics API traffic",
+      "datasource": {"type": "prometheus", "uid": "PROMETHEUS"},
+      "targets": [{"expr": "sum by (route, status) (rate(finsight_analytics_api_requests_total[5m]))", "legendFormat": "{{route}} · {{status}}"}],
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 21}
+    },
+    {
+      "id": 14,
+      "type": "timeseries",
+      "title": "Rejected events by rule",
+      "datasource": {"type": "prometheus", "uid": "PROMETHEUS"},
+      "targets": [{"expr": "sum by (error_code) (rate(finsight_ingestion_rejected_total[5m]))", "legendFormat": "{{error_code}}"}],
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 21}
+    },
+    {
+      "id": 15,
+      "type": "timeseries",
+      "title": "Persistent-volume utilization",
+      "datasource": {"type": "prometheus", "uid": "PROMETHEUS"},
+      "fieldConfig": {"defaults": {"unit": "percentunit", "min": 0, "max": 1}},
+      "targets": [{"expr": "kubelet_volume_stats_used_bytes{namespace=\"finsight\"} / kubelet_volume_stats_capacity_bytes{namespace=\"finsight\"}", "legendFormat": "{{persistentvolumeclaim}}"}],
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 29}
+    },
+    {
+      "id": 16,
+      "type": "timeseries",
+      "title": "Pod CPU use",
+      "datasource": {"type": "prometheus", "uid": "PROMETHEUS"},
+      "fieldConfig": {"defaults": {"unit": "cores"}},
+      "targets": [{"expr": "sum by (pod) (rate(container_cpu_usage_seconds_total{namespace=\"finsight\",container!=\"\"}[5m]))", "legendFormat": "{{pod}}"}],
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 29}
     }
   ]
 }

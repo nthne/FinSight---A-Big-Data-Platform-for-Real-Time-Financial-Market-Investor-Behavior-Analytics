@@ -1,0 +1,15 @@
+# Direct Python dependency lock for the FinSight shared build baseline.
+# Python is pinned by the container images (3.12); Java libraries are pinned in
+# containers/spark/Dockerfile and docs/architecture/version-matrix.md.
+confluent-kafka==2.16.0
+fastapi==0.135.2
+graphframes-py==0.12.3
+httpx==0.28.1
+jsonschema==4.26.0
+pyarrow==23.0.1
+pymongo==4.15.3
+pyspark==4.0.4
+pytest==8.4.2
+PyYAML==6.0.3
+uvicorn==0.42.0
+

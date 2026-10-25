@@ -45,3 +45,69 @@ groups:
         annotations:
           summary: Bronze quality rejection detected
           description: Inspect the immutable Bronze run metadata and DLQ for the source and error code.
+  - name: finsight.platform
+    rules:
+      - alert: FinSightApplicationDown
+        expr: up{job="finsight-app"} == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: FinSight application is unavailable
+          description: Prometheus has been unable to scrape the application for five minutes.
+      - alert: FinSightMongoServingUnavailable
+        expr: finsight_mongodb_up == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: MongoDB serving view is unavailable
+          description: The app metrics endpoint cannot ping MongoDB; dashboard analytics should show a bounded unavailable state.
+      - alert: FinSightAnalyticsApiErrors
+        expr: sum(increase(finsight_analytics_api_errors_total[10m])) > 0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: Analytics API returned server errors
+          description: Inspect the route/status panels and application logs before trusting dashboard freshness.
+      - alert: FinSightStreamingProgressMissing
+        expr: absent(finsight_stream_input_rows_per_second) == 1
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: No Spark streaming progress is being exported
+          description: Check the speed-layer pod, MongoDB pipeline_quality_metrics and checkpoint access.
+      - alert: FinSightKafkaLagHigh
+        expr: sum by (consumergroup) (kafka_consumergroup_lag) > 1000
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: Kafka consumer lag exceeds the coursework budget
+          description: Identify the lagging consumer group before changing partitions or Spark resources.
+      - alert: FinSightLateEventSpike
+        expr: finsight_gate_too_late_events_24h > 100
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: Too-late event count is elevated
+          description: Check provider clocks, ingestion delay and the configured ten-minute watermark.
+      - alert: FinSightFailedJob
+        expr: kube_job_status_failed{namespace="finsight"} > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: A FinSight Kubernetes Job failed
+          description: Inspect the failed job logs and its immutable run metadata.
+      - alert: FinSightPersistentVolumePressure
+        expr: kubelet_volume_stats_used_bytes{namespace="finsight"} / kubelet_volume_stats_capacity_bytes{namespace="finsight"} > 0.85
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: FinSight persistent volume exceeds 85 percent
+          description: Apply the documented retention/compaction policy before storage is exhausted.

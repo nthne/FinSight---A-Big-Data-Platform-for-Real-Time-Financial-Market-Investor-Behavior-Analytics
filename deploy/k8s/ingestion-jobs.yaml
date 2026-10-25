@@ -44,12 +44,12 @@ spec:
             - name: MINIO_ACCESS_KEY
               valueFrom:
                 secretKeyRef:
-                  name: finsight-ingestion-secrets
+                  name: finsight-platform-secrets
                   key: minio-access-key
             - name: MINIO_SECRET_KEY
               valueFrom:
                 secretKeyRef:
-                  name: finsight-ingestion-secrets
+                  name: finsight-platform-secrets
                   key: minio-secret-key
           resources:
             requests:
@@ -93,12 +93,12 @@ spec:
                 - name: MINIO_ACCESS_KEY
                   valueFrom:
                     secretKeyRef:
-                      name: finsight-ingestion-secrets
+                      name: finsight-platform-secrets
                       key: minio-access-key
                 - name: MINIO_SECRET_KEY
                   valueFrom:
                     secretKeyRef:
-                      name: finsight-ingestion-secrets
+                      name: finsight-platform-secrets
                       key: minio-secret-key
                 - name: BRONZE_CONSUMER_GROUP
                   value: finsight-bronze-v1
