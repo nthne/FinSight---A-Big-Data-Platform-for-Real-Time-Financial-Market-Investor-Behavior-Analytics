@@ -6,10 +6,11 @@ The shared dashboard covers ingestion, Kafka lag, Structured Streaming progress,
 
 | Owner | Source | Metrics |
 | --- | --- | --- |
-| Person A | ingestion gateway `/metrics`; Bronze run metadata | accepted/rejected/publish failures, source freshness and quality counters |
+| Person A | ingestion gateway `/metrics` | accepted/rejected events and Kafka publish failures |
+| Person A | Bronze run metadata (evidence, not scraped) | accepted/rejected/duplicate/null/unknown-symbol counters; a Prometheus exporter remains a follow-up |
 | Person B | batch job metrics/evidence | batch duration, shuffle, input/output rows and model/job status |
 | Person C | `pipeline_quality_metrics` in MongoDB | input/processing rate, trigger duration, watermark, state rows, dropped/late/invalid events and sink outcomes |
-| Person D | app `/api/metrics`; Kubernetes/Prometheus exporters | API requests/errors, MongoDB ping latency, application uptime, Kafka lag and cluster resources |
+| Person D | app `/api/metrics`; Kubernetes/Prometheus exporters | API requests/errors, MongoDB ping latency, latest served market-event time, application uptime, Kafka lag and cluster resources |
 
 The application exporter intentionally contains no user IDs, symbols, tokens or database URI. Its counters are process-local and reset after a pod restart. Prometheus treats that as a counter reset. Spark metrics are the latest persisted `StreamingQueryProgress` documents, so they survive an app restart.
 

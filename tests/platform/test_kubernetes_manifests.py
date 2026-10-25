@@ -129,6 +129,9 @@ def test_dashboard_covers_each_shared_observability_boundary():
             encoding="utf-8"
         )
     )
+    platform_exporter = (ROOT / "src" / "lib" / "platform-metrics.server.ts").read_text(
+        encoding="utf-8"
+    )
     expressions = "\n".join(
         target["expr"]
         for panel in dashboard["panels"]
@@ -141,17 +144,28 @@ def test_dashboard_covers_each_shared_observability_boundary():
         "finsight_stream_state_rows",
         "finsight_stream_watermark_timestamp_seconds",
         "finsight_gate_too_late_events_24h",
+        "finsight_market_event_timestamp_seconds",
         "finsight_mongodb_ping_duration_seconds",
         "finsight_analytics_api_errors_total",
         "kubelet_volume_stats_used_bytes",
         "container_cpu_usage_seconds_total",
     ):
         assert metric in expressions
+    for app_metric in (
+        "finsight_market_event_timestamp_seconds",
+        "finsight_mongodb_ping_duration_seconds",
+        "finsight_stream_batch_duration_seconds",
+        "finsight_gate_too_late_events_24h",
+    ):
+        assert app_metric in platform_exporter
 
 
 def test_version_coordinates_stay_aligned_with_streaming_code():
     dockerfile = (ROOT / "containers" / "spark" / "Dockerfile").read_text(encoding="utf-8")
     config = (ROOT / "spark" / "lib" / "streaming_config.py").read_text(encoding="utf-8")
+    spark_defaults = (ROOT / "storage" / "minio" / "spark-defaults.conf").read_text(
+        encoding="utf-8"
+    )
     assert "ARG SPARK_VERSION=4.0.4" in dockerfile
     assert 'SPARK_VERSION = "4.0.4"' in config
     assert "ARG HADOOP_AWS_VERSION=3.4.1" in dockerfile
@@ -160,6 +174,11 @@ def test_version_coordinates_stay_aligned_with_streaming_code():
     assert "io.graphframes:graphframes-spark4_2.13:${GRAPHFRAMES_VERSION}" in dockerfile
     assert "ARG MONGO_SPARK_VERSION=11.1.0" in dockerfile
     assert "mongo-spark-connector_2.13:${MONGO_SPARK_VERSION}" in dockerfile
+    assert (
+        "software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider"
+        in spark_defaults
+    )
+    assert "com.amazonaws.auth.EnvironmentVariableCredentialsProvider" not in spark_defaults
 
 
 def test_app_image_uses_node_server_and_never_builds_with_a_server_secret():
