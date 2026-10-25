@@ -30,21 +30,13 @@ groups:
           summary: Ingestion rejection rate is high
           description: More than five percent of gateway events were rejected for ten minutes.
       - alert: FinSightMarketEventsStale
-        expr: time() - max(finsight_market_event_timestamp_seconds) > 300
+        expr: (time() - max(finsight_market_event_timestamp_seconds) > 300) or absent(finsight_market_event_timestamp_seconds)
         for: 5m
         labels:
           severity: warning
         annotations:
           summary: Market event freshness is outside the five minute budget
           description: Provider freshness requires investigation before serving data as current.
-      - alert: FinSightBronzeRunRejected
-        expr: increase(finsight_bronze_rejected_records_total[15m]) > 0
-        for: 5m
-        labels:
-          severity: warning
-        annotations:
-          summary: Bronze quality rejection detected
-          description: Inspect the immutable Bronze run metadata and DLQ for the source and error code.
   - name: finsight.platform
     rules:
       - alert: FinSightApplicationDown

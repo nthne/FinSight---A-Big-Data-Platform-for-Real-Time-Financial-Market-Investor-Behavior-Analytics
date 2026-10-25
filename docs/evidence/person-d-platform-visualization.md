@@ -26,10 +26,10 @@ The UI has explicit loading, empty, dependency-error and stale states. It reads 
 | Production Node server + `GET /api/health` | Passed on localhost; endpoint returned healthy process state. |
 | Production Node server + `GET /api/metrics` without Mongo configuration | Passed with honest degraded dependency state, including `finsight_mongodb_up 0`; the endpoint did not report a false-green dependency. |
 | Scoped ESLint for Person D TypeScript/TSX and Vite files | Passed. |
-| `python -m pytest tests/platform/test_kubernetes_manifests.py ingestion/tests storage/tests serving/tests tests/data_quality -q` | 45 passed, 7 skipped, 1 warning in 2.93 seconds. The seven Mongo integration skips require `FINSIGHT_TEST_MONGO_URI`. |
+| `python -m pytest tests/platform/test_kubernetes_manifests.py ingestion/tests storage/tests serving/tests tests/data_quality -q` | 45 passed, 7 skipped, 1 warning in 3.74 seconds. The seven Mongo integration skips require `FINSIGHT_TEST_MONGO_URI`. |
 | `node --test --experimental-strip-types tests/platform/app_metrics.test.ts ingestion/tests/*.test.ts` | 8 passed, including unique metric-label and sensitive-label sanitization coverage. |
 | YAML parse and platform invariants | Passed through the platform suite: namespace, resources, probes, persistence, service boundaries, secret wiring, checkpoint lineage, dashboard coverage and version alignment. |
-| Full-repository `npm run lint` | Did not pass: the existing tree reports hundreds of unrelated/pre-existing formatting and type-rule findings. Person D's changed frontend files pass the scoped check. |
+| Full-repository `npm run lint -- --quiet` | Did not pass: 240 existing repository-wide errors, of which 237 are reported as potentially auto-fixable; the output is dominated by pre-existing formatting plus several `no-explicit-any` findings. Person D's changed frontend files pass the scoped check. |
 | Shared Spark/App image builds | Not run: Docker daemon was unavailable. No image digest is claimed. |
 | Kubernetes apply/DNS/restart/alert scenarios | Not run: no Kubernetes context was configured. No recovery duration is claimed. |
 | Spark/GraphFrames import smoke on the shared image | Not run because the image could not be built. The coordinates are statically aligned but runtime compatibility remains a release gate. |
