@@ -22,7 +22,7 @@ export async function renderPlatformMetrics(db: Db) {
   const pingSeconds = (performance.now() - pingStarted) / 1_000;
   const metrics = db.collection<Document>("pipeline_quality_metrics");
   const since = new Date(Date.now() - 24 * 60 * 60 * 1_000);
-  const [progress, gates] = await Promise.all([
+  const [progress, gates, latestMarket] = await Promise.all([
     metrics
       .aggregate([
         { $match: { kind: "progress" } },
@@ -32,6 +32,12 @@ export async function renderPlatformMetrics(db: Db) {
       ])
       .toArray(),
     metrics.find({ kind: "gate", computed_at: { $gte: since } }).toArray(),
+    db
+      .collection<Document>("latest_market_metrics")
+      .find({}, { projection: { last_event_time: 1 } })
+      .sort({ last_event_time: -1 })
+      .limit(1)
+      .next(),
   ]);
 
   const lines = [
@@ -53,7 +59,15 @@ export async function renderPlatformMetrics(db: Db) {
     "# TYPE finsight_stream_rows_dropped_by_watermark gauge",
     "# HELP finsight_stream_watermark_timestamp_seconds Latest event-time watermark.",
     "# TYPE finsight_stream_watermark_timestamp_seconds gauge",
+    "# HELP finsight_market_event_timestamp_seconds Most recent served market event time.",
+    "# TYPE finsight_market_event_timestamp_seconds gauge",
   ];
+
+  if (latestMarket?.last_event_time instanceof Date) {
+    lines.push(
+      `finsight_market_event_timestamp_seconds ${dateSeconds(latestMarket.last_event_time)}`,
+    );
+  }
 
   for (const item of progress) {
     const query = `query="${label(item.query_name)}"`;

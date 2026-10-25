@@ -177,6 +177,9 @@ function AnalyticsDashboard() {
                   <span>{formatPercent(quote.window_return_pct)}</span>
                   <span>{formatAge(quote.quote_age_seconds)}</span>
                 </div>
+                <div className="mt-2 truncate text-[0.68rem] text-muted-foreground">
+                  Source: {quote.source ?? "unknown"}
+                </div>
               </Card>
             ))
           ) : (
@@ -300,6 +303,8 @@ function AnalyticsDashboard() {
                 <Skeleton className="h-16" />
                 <Skeleton className="h-16" />
               </div>
+            ) : risk.error ? (
+              <PanelError description="The authoritative portfolio-risk view could not be loaded." />
             ) : risk.data?.data ? (
               <div className="mt-5 space-y-3">
                 <MetricRow
@@ -400,6 +405,8 @@ function AnalyticsDashboard() {
             <h2 className="font-serif text-xl font-semibold">Behavior pattern</h2>
             {segment.isLoading ? (
               <Skeleton className="mt-5 h-40" />
+            ) : segment.error ? (
+              <PanelError description="The educational behavior segment could not be loaded." />
             ) : segment.data?.data ? (
               <div className="mt-5">
                 <div className="rounded-lg border bg-muted/40 p-4">
@@ -459,22 +466,52 @@ function PipelinePanel({
       ) : error ? (
         <p className="mt-5 text-sm text-destructive">Pipeline health could not be loaded.</p>
       ) : response ? (
-        <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-3">
-          <MetricTile
-            icon={Waves}
-            label="Streaming queries"
-            value={String(response.data.queries.length)}
-          />
-          <MetricTile
-            icon={AlertTriangle}
-            label="Too-late events (24h)"
-            value={String(response.data.gate.too_late)}
-          />
-          <MetricTile
-            icon={Database}
-            label="Lambda cutoffs"
-            value={String(response.data.lambda.length)}
-          />
+        <div className="mt-5 space-y-5">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <MetricTile
+              icon={Waves}
+              label="Streaming queries"
+              value={String(response.data.queries.length)}
+            />
+            <MetricTile
+              icon={AlertTriangle}
+              label="Too-late events (24h)"
+              value={String(response.data.gate.too_late)}
+            />
+            <MetricTile
+              icon={Database}
+              label="Lambda cutoffs"
+              value={String(response.data.lambda.length)}
+            />
+          </div>
+          {response.data.queries.length > 0 && (
+            <div className="overflow-x-auto rounded-lg border">
+              <table className="w-full min-w-[680px] text-left text-xs">
+                <thead className="bg-muted/60 text-muted-foreground">
+                  <tr>
+                    <th className="px-3 py-2 font-medium">Query</th>
+                    <th className="px-3 py-2 font-medium">Input/s</th>
+                    <th className="px-3 py-2 font-medium">Processed/s</th>
+                    <th className="px-3 py-2 font-medium">State rows</th>
+                    <th className="px-3 py-2 font-medium">Watermark</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {response.data.queries.map((query) => (
+                    <tr key={query.query_name} className="border-t">
+                      <td className="px-3 py-2 font-mono">{query.query_name}</td>
+                      <td className="px-3 py-2 num">{formatRate(query.input_rows_per_second)}</td>
+                      <td className="px-3 py-2 num">
+                        {formatRate(query.processed_rows_per_second)}
+                      </td>
+                      <td className="px-3 py-2 num">{query.state_rows_total}</td>
+                      <td className="px-3 py-2">{formatTimestamp(query.watermark)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       ) : (
         <EmptyState
@@ -598,6 +635,17 @@ function EmptyState({ title, description }: { title: string; description: string
   );
 }
 
+function PanelError({ description }: { description: string }) {
+  return (
+    <div className="mt-5 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+      <div className="flex items-start gap-2">
+        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+        <span>{description}</span>
+      </div>
+    </div>
+  );
+}
+
 function marketChartData(
   response: AnalyticsResponse<{
     points: Array<{
@@ -664,6 +712,16 @@ function formatAge(seconds: number | null) {
   if (seconds < 60) return `${Math.max(0, Math.round(seconds))}s ago`;
   if (seconds < 3_600) return `${Math.round(seconds / 60)}m ago`;
   return `${Math.round(seconds / 3_600)}h ago`;
+}
+
+function formatRate(value: number | null) {
+  return value === null ? "—" : value.toLocaleString(undefined, { maximumFractionDigits: 1 });
+}
+
+function formatTimestamp(value: string | null) {
+  if (!value) return "—";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "—" : date.toLocaleString();
 }
 
 function freshnessLabel(freshness: AnalyticsFreshness | null) {
