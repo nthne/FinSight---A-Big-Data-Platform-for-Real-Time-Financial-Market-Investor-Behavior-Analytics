@@ -36,3 +36,9 @@ This is a bounded event-generation measurement, not an end-to-end Kafka/Spark/Mi
 - `kubectl` cannot be verified until a cluster context exists.
 - Supabase production requires `INGESTION_GATEWAY_URL` and `INGESTION_GATEWAY_TOKEN` secrets before market refresh events are enabled.
 - The MinIO source-built image is for isolated coursework only; a human owner must choose the maintained S3-compatible provider, licensing and retention policy before production.
+
+---
+
+# Person D platform, visualization and monitoring evidence
+
+Person D's dated commands, exact results, security decisions and unverified runtime gates are recorded in `docs/evidence/person-d-platform-visualization.md`. The acceptance-level map is `docs/evidence/traceability.md`; it intentionally distinguishes source/configuration validation from a real Kubernetes rollout.

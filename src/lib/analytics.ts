@@ -75,6 +75,29 @@ export interface ActivitySession {
   distinct_assets: number;
 }
 
+export interface PipelineQueryHealth {
+  query_name: string;
+  batch_id: number;
+  timestamp: string | null;
+  input_rows_per_second: number | null;
+  processed_rows_per_second: number | null;
+  watermark: string | null;
+  rows_dropped_by_watermark: number;
+  state_rows_total: number;
+}
+
+export interface PipelineHealth {
+  queries: PipelineQueryHealth[];
+  gate: {
+    window_hours: number;
+    batches: number;
+    invalid: number;
+    too_late: number;
+    by_error_code: Record<string, number>;
+  };
+  lambda: Array<{ dataset: string; batch_cutoff: string | null; batch_run_id?: string }>;
+}
+
 export interface AnalyticsRoutes {
   "market/latest": LatestQuote[];
   "market/series": { asset_symbol: string; granularity: string; points: MarketPoint[] };
@@ -82,7 +105,7 @@ export interface AnalyticsRoutes {
   "me/sessions": ActivitySession[];
   "me/risk": Record<string, unknown> | null;
   "me/segment": Record<string, unknown> | null;
-  "pipeline/health": Record<string, unknown>;
+  "pipeline/health": PipelineHealth;
 }
 
 export class AnalyticsApiError extends Error {

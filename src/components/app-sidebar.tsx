@@ -6,6 +6,7 @@ import {
   Brain,
   Trophy,
   BookOpen,
+  Activity,
   Settings,
   ShieldCheck,
   LogOut,
@@ -31,6 +32,7 @@ const main = [
   { title: "Portfolio", url: "/portfolio", icon: Briefcase },
 ];
 const insights = [
+  { title: "Live Analytics", url: "/analytics", icon: Activity },
   { title: "Behavioral", url: "/behavioral", icon: Brain },
   { title: "Gamification", url: "/gamification", icon: Trophy },
 ];
@@ -80,9 +82,7 @@ export function AppSidebar() {
             <div className="font-serif text-lg font-semibold text-white drop-shadow-sm">
               FinSight
             </div>
-            <div className="small-caps text-[0.6rem] text-white/80">
-              v1.0 - Research group
-            </div>
+            <div className="small-caps text-[0.6rem] text-white/80">v1.0 - Research group</div>
           </div>
         </Link>
       </SidebarHeader>

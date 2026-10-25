@@ -10,9 +10,18 @@
 **Deployment:** Kubernetes or a managed cloud Kubernetes service  
 **Visualization:** Existing React/TanStack dashboard with Recharts  
 **Delivery window:** Target completion in 5 weeks with 4 team members; Week 6 is contingency only  
-**Document status:** Five-week delivery baseline with a hard six-week limit; implementation results must be added after execution
+**Document status:** Integrated implementation report; measured results and remaining runtime gates are dated 2026-10-25
 
-> This document is the working plan for the Big Data milestone. It describes the target architecture, implementation tasks, verification evidence and lessons to record. It does not claim that Spark, Kafka, MongoDB or Kubernetes are already implemented in the current codebase.
+> This document combines the milestone design with the current implementation state. Detailed acceptance status is maintained in `docs/evidence/traceability.md`; source/configuration work is never presented as a successful distributed runtime demonstration.
+
+## Current implementation status
+
+| Workstream | Current state | Evidence boundary |
+| --- | --- | --- |
+| Ingestion and Bronze storage | Implemented with deterministic local Kafka-to-MinIO evidence and a one-million-event generation baseline | `docs/evidence/member-a-ingestion-storage.md` |
+| Structured Streaming and serving | Implemented with local integration/restart evidence, deterministic keys and authenticated API boundaries | `docs/evidence/streaming-integration.md`, `docs/evidence/recovery-test.md`, `docs/evidence/analytics-api.md` |
+| Platform and visualization | Version/image definitions, Kubernetes manifests, monitoring, React/Recharts analytics view, platform tests and runbooks are implemented | `docs/evidence/person-d-platform-visualization.md`; Kubernetes runtime is pending because this machine has no Docker daemon or cluster context |
+| Batch, optimization, MLlib and GraphFrames analytics | Required by the design but not present on this branch | Person B runtime/source evidence remains an acceptance blocker |
 
 ---
 
@@ -20,9 +29,9 @@
 
 FinSight is a real-time financial analytics platform for processing market quotes, simulated trades and investor-behavior events. The system will help learners inspect portfolio risk, market movement and behavioral patterns without executing real-money trades.
 
-The existing project provides a useful application layer: React/TanStack screens, authentication, simulated trading, Supabase/PostgreSQL persistence, market-data integrations and Recharts visualizations. The milestone work will extend that application with a genuine Big Data layer. Kafka will provide durable event ingestion, Spark will provide batch and streaming processing, MinIO will provide distributed object storage, MongoDB will provide low-latency serving views, and Kubernetes will provide reproducible deployment and service discovery.
+The existing application layer—React/TanStack screens, authentication, simulated trading, Supabase/PostgreSQL persistence, market-data integrations and Recharts—has been extended with Kafka ingestion, MinIO Bronze storage, Spark Structured Streaming, MongoDB serving contracts and an authenticated analytics view. The batch/advanced-analytics workstream remains incomplete, and Kubernetes artifacts are implemented but not yet exercised on a configured cluster.
 
-The recommended architecture is Lambda because the project must demonstrate both historical batch analytics and near-real-time stream processing. The batch layer will rebuild curated datasets and long-window analytics from Parquet files. The speed layer will process Kafka events with Spark Structured Streaming and publish fresh metrics to MongoDB. The serving layer will expose a stable API to the existing dashboard.
+The selected architecture is Lambda because the project must demonstrate both historical batch analytics and near-real-time stream processing. The implemented speed layer processes Kafka events with Spark Structured Streaming and publishes fresh metrics to MongoDB. The serving layer exposes a stable API to the dashboard. The batch layer is still a required missing workstream and must rebuild curated datasets and long-window analytics from Parquet before the full Lambda claim can pass.
 
 The milestone is successful when a reviewer can follow an event from ingestion to processing, storage and visualization; inspect Spark transformations and execution plans; observe late-data and recovery behavior; query a NoSQL serving view; and reproduce the deployment and tests. All throughput, latency, accuracy and recovery claims must be supported by recorded measurements.
 
@@ -441,15 +450,17 @@ Every serving document must contain a computation timestamp, source window, pipe
 
 ## 6.4 Frontend Integration
 
-The existing React dashboard will consume analytics through a thin API adapter. It will show:
+The React dashboard now consumes analytics through the authenticated server API and exposes a dedicated `/analytics` route. It shows:
 
 - Current quote and quote age.
 - Rolling volatility and moving averages.
 - Portfolio drawdown, concentration and risk segment.
 - Investor behavior segment and contributing features.
-- Data-pipeline status and freshness for the demonstration environment.
+- Data-pipeline status and freshness for administrators in the demonstration environment.
+- Explicit loading, empty, stale and dependency-error states.
+- Lambda provenance: authoritative batch values are distinguished from provisional speed-layer values.
 
-The UI must label analytical segments as educational signals, not psychological diagnoses or investment recommendations.
+The UI labels analytical segments as educational signals, not psychological diagnoses or investment recommendations. The production Node build and local health/metrics endpoints pass; a screenshot with live MongoDB data remains a cluster-enabled evidence gate.
 
 ---
 
@@ -457,19 +468,19 @@ The UI must label analytical segments as educational signals, not psychological 
 
 ## 7.1 Kubernetes Deployment
 
-The Kubernetes profile must provide:
+The checked-in Kubernetes profile provides:
 
 - A namespace for FinSight.
 - Kafka broker/controller configuration and persistent volumes.
 - MinIO with persistent storage.
 - MongoDB with persistent storage and indexes.
-- Spark driver/executor or Spark Operator resources.
-- Producer, batch-job and streaming-job deployments/jobs.
+- A bounded Spark local-mode speed-layer workload with persistent S3A checkpoint lineage.
+- Ingestion, deterministic fixture-producer, streaming and initialization/runtime-smoke workloads.
 - API/frontend services and ingress or port-forward instructions.
 - ConfigMaps for non-secret settings and Secrets for credentials.
 - Resource requests and limits for every workload.
 
-Docker images may be used as container artifacts, but the assessment evidence must show Kubernetes deployment, service discovery, restart behavior and resource configuration.
+Person B's batch/ML/GraphFrames workloads are not present and are not represented by placeholder jobs. All long-running workloads have probes and every container has CPU/memory requests and limits. The platform tests verify the static invariants, but assessment evidence must still show a real rollout, service discovery, built image digests and restart behavior on a configured cluster.
 
 ## 7.2 Observability
 
@@ -483,7 +494,7 @@ Expose or record:
 - API response latency and error rate.
 - CPU, memory, disk and network use.
 
-Prometheus and Grafana are the preferred monitoring stack. Spark UI and structured JSON logs supplement the dashboards. Alerts should cover consumer lag, failed streaming batches, stale market data, storage capacity, high rejection rates and API error spikes.
+Prometheus, Grafana and Kafka Exporter manifests are included. The 16-panel dashboard covers ingestion, Kafka lag, Spark rates/batch duration/state/watermark, late/invalid events, MongoDB, API errors, unavailable replicas, persistent volumes and CPU. Alert rules cover application/Mongo availability, missing stream progress, consumer lag, API errors, late-event spikes, failed jobs and volume pressure. Spark UI and structured logs supplement the dashboard. Kubernetes resource panels require cluster-managed kube-state-metrics and kubelet/cAdvisor scraping; absent series are shown as unavailable, not as invented zeros.
 
 ## 7.3 Failure Demonstrations
 
@@ -711,13 +722,16 @@ Record throughput, p50/p95 latency, Kafka lag, Spark batch duration, shuffle, st
 
 ### Final Solution
 
-Use JSON logs, correlation/run IDs, Prometheus metrics, Grafana dashboards, Spark UI and alert rules. For each injected failure, record timeline, symptom, metric, root cause, recovery and prevention.
+Person D implemented an aggregate application Prometheus endpoint, MongoDB/persisted-stream health metrics, a 16-panel Grafana dashboard and alert rules spanning the app, MongoDB, Kafka lag, missing stream progress, API errors, late-event spikes, failed jobs and storage pressure. The dashboard preserves correlation through pipeline run IDs, deterministic event/window keys and freshness metadata rather than exporting user identifiers.
+
+The local production server check proved that `/api/health` responds and that `/api/metrics` reports `finsight_mongodb_up 0` when MongoDB is not configured, avoiding a false-green dependency. Static platform tests verify that the expected metrics appear in the dashboard. A real alert-firing timeline and recovery duration are not reported because this machine had no Kubernetes context; the bounded failure and evidence-capture procedure is in `docs/demo/runbook.md`.
 
 ### Key Takeaways
 
 - Monitor data quality as well as infrastructure health.
-- Correlation IDs reduce debugging time.
-- A useful alert must lead to an actionable investigation.
+- A healthy web process and a healthy data dependency are different signals; both must be exposed.
+- Correlation/run IDs and deterministic serving keys connect a symptom to the responsible pipeline execution without leaking user identity.
+- An empty panel is an unavailable measurement, not a measured zero, and an alert is not proven until firing and resolution timestamps are captured.
 
 ## Lesson 8: Horizontal Scaling and Resource Planning
 
@@ -831,19 +845,21 @@ Persist Kafka and MinIO/MongoDB data, checkpoint streaming queries, document res
 
 # 12 Completion Checklist
 
-- [ ] Lambda architecture and Kappa comparison are documented.
-- [ ] At least three source types publish versioned events to Kafka.
+- [x] Lambda architecture and Kappa comparison are documented.
+- [ ] At least three source types publish versioned events to Kafka; their producer boundaries are implemented, but recorded runtime evidence currently proves only the market-quote path.
 - [ ] Raw and curated Parquet data exists in MinIO/S3 or HDFS.
 - [ ] Spark batch job runs with required transformations, joins and optimizations.
-- [ ] Spark Structured Streaming job runs with windows, watermark, state and checkpoints.
-- [ ] Duplicate, late-event and restart behavior is tested.
+- [x] Spark Structured Streaming job runs with windows, watermark, state and checkpoints in the recorded Person C integration profile.
+- [x] Duplicate, late-event and restart behavior is tested in the recorded Person C profile; Kubernetes repetition remains pending.
 - [ ] MLlib, GraphFrames and statistical/time-series analytics are demonstrated.
-- [ ] MongoDB serving collections and indexes are documented and queried by the API.
+- [x] MongoDB serving collections and indexes are documented and queried by the API in the serving test/evidence profile.
 - [ ] Existing React dashboard displays processed results and data freshness.
 - [ ] Kubernetes deployment is reproducible and monitored.
 - [ ] Data quality, security, performance and recovery evidence is recorded.
-- [ ] All eleven lessons use Problem Description, Approaches Tried, Final Solution and Key Takeaways.
-- [ ] Final report distinguishes measured results from plans and limitations.
+- [x] All eleven lessons use Problem Description, Approaches Tried, Final Solution and Key Takeaways; missing owner results remain identified as plans.
+- [x] Final report distinguishes measured results from plans and limitations through the dated traceability/evidence documents.
+
+Unchecked entries are release blockers, not omissions hidden by the report. See `docs/evidence/traceability.md` for the responsible workstream, implemented artifacts and exact pending runtime proof.
 
 ---
 

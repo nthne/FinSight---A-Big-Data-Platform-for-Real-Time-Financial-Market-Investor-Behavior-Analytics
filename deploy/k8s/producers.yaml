@@ -1,0 +1,56 @@
+# Manual demonstration producer. It is suspended by default and publishes the
+# deterministic provider fixture only when an operator creates a Job from it:
+# kubectl -n finsight create job --from=cronjob/finsight-market-fixture-producer market-demo-001
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: finsight-market-fixture-producer
+  namespace: finsight
+  labels:
+    app.kubernetes.io/part-of: finsight
+spec:
+  schedule: "0 0 1 1 *"
+  suspend: true
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 3
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: market-producer
+              image: finsight-ingestion:dev
+              command:
+                - python
+                - -m
+                - ingestion.producers.market_producer
+                - ingestion/fixtures/market-quote-source.json
+                - --known-symbol
+                - AAPL
+                - --known-symbol
+                - TSLA
+                - --known-symbol
+                - MSFT
+                - --known-symbol
+                - BTC
+                - --known-symbol
+                - GOLD
+                - --publish
+              envFrom:
+                - configMapRef:
+                    name: finsight-ingestion-config
+              resources:
+                requests:
+                  cpu: 25m
+                  memory: 64Mi
+                limits:
+                  cpu: 200m
+                  memory: 256Mi
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop: ["ALL"]
+                readOnlyRootFilesystem: true

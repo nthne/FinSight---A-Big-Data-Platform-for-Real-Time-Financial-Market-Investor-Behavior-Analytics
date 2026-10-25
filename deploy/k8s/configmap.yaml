@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: finsight-platform-config
+  namespace: finsight
+  labels:
+    app.kubernetes.io/part-of: finsight
+data:
+  KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+  KAFKA_SECURITY_PROTOCOL: PLAINTEXT
+  MONGO_DATABASE: finsight
+  MINIO_ENDPOINT: http://minio:9000
+  MINIO_BUCKET: fin-sight
+  AWS_REGION: us-east-1
+  BRONZE_BASE_URI: s3://fin-sight
+  CHECKPOINT_ROOT: s3a://fin-sight/checkpoints/speed
+  CURATED_ROOT: s3a://fin-sight/silver/speed
+  DIAGNOSTICS_ROOT: s3a://fin-sight/diagnostics
+  STARTING_OFFSETS: latest
+  WATERMARK_DELAY: 10 minutes
+  TRIGGER_INTERVAL: 10 seconds
+  RUN_ID: k8s-speed-v1
+  SPARK_SHUFFLE_PARTITIONS: "8"
+  PYSPARK_SUBMIT_ARGS: --master local[*] --driver-memory 1400m pyspark-shell
+  KNOWN_ASSET_SYMBOLS: AAPL,TSLA,MSFT,BTC,GOLD
+  INGESTION_GATEWAY_URL: http://finsight-ingestion:8080
+  NODE_ENV: production
+  HOST: 0.0.0.0
+  PORT: "3000"
+
