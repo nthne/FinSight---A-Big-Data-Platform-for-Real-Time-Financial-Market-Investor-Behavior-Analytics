@@ -1,0 +1,35 @@
+# Overlay for genuine external-provider Supabase market history replay.
+services:
+  ingestion:
+    environment:
+      KNOWN_ASSET_SYMBOLS: ""
+  bronze-once:
+    environment:
+      KNOWN_ASSET_SYMBOLS: ""
+  speed-layer:
+    environment:
+      KNOWN_ASSET_SYMBOLS: ""
+  real-market-replay:
+    profiles: ["real-data"]
+    image: finsight-ingestion:dev
+    user: "${REPLAY_UID:-1000}:${REPLAY_GID:-1000}"
+    command:
+      - python
+      - -m
+      - ingestion.producers.supabase_market_replay
+      - --limit
+      - ${REAL_REPLAY_LIMIT:-5000}
+      - --days
+      - ${REAL_REPLAY_DAYS:-30}
+      - --rate
+      - ${REAL_REPLAY_RATE:-25}
+    environment:
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}
+      INGESTION_GATEWAY_URL: http://ingestion:8080
+      INGESTION_GATEWAY_TOKEN: local-integration-token
+    volumes:
+      - ../evidence/real-market:/reports
+    depends_on:
+      ingestion:
+        condition: service_healthy
